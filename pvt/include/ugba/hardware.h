@@ -10,7 +10,7 @@
 
 #include <stdint.h>
 
-#include "pvt_definitions.h"
+#include "definitions.h"
 
 // Device definitions
 // ------------------

@@ -39,6 +39,7 @@ GRAPHICS	:=
 
 # Source files to compile
 SOURCES		:= src/*.c
+SOURCES		+= $(if $(strip $(FB_MGBA_LOG)),pvt/src/mgba.c,)
 
 # Include directories
 INCLUDES	:= include pvt/include
@@ -73,7 +74,8 @@ WARNINGS	:= -Wall -Wextra -Wpedantic -Wshadow -Wundef -Wunused-parameter -Wmisle
 ALLFLAGS	:= $(WARNINGS) -g3 -gdwarf-4 -O2 \
 		-ffunction-sections -fdata-sections \
 		-masm-syntax-unified \
-		-D_DEFAULT_SOURCE
+		-D_DEFAULT_SOURCE \
+		$(if $(strip $(FB_MGBA_LOG)),-DFB_MGBA_LOG,)
 
 # C compiler flags
 CFLAGS		:= -std=c11
