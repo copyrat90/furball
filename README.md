@@ -13,11 +13,11 @@ It lets you play the [Furnace](https://github.com/tildearrow/furnace) DMG + PCM 
 Setup [devkitARM](https://devkitpro.org/wiki/Getting_Started), and call `make -j$(nproc)`\
 It'll build the `lib/libfurball.a`
 
-#### Make options
+#### Makefile options
 
-If you want to change any make option, you need to run `make clean` beforehand.
+If you change any Makefile option, you need to run `make clean` before running `make`.
 
-* `FB_MGBA_LOG=1` : enables mGBA logging.
+* `FB_MGBA_LOG := 1` : enables mGBA logging.
 
 
 ### Using the converter

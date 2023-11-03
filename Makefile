@@ -2,25 +2,19 @@ ifeq ($(and $(strip $(DEVKITPRO)),$(strip $(DEVKITARM))),)
 $(error Make sure DEVKITPRO and DEVKITARM are correctly set in your environment.)
 endif
 
-# Name of your ROM
-#
-# Add _mb to the end to build a multiboot ROM.
 PROJECT		:= furball
 
-# Uncomment this if you're building a library
-#
 BUILD_LIB	:= yes
 
-# Options for gbafix (optional)
 #
-# Title:        12 characters
-# Game code:     4 characters
-# Maker code:    2 characters
-# Version:       1 character
-ROM_TITLE	:=
-ROM_GAMECODE	:=
-ROM_MAKERCODE	:=
-ROM_VERSION	:=
+# Furball Makefile options
+#
+# see `README.md` for details.
+#
+
+# FB_MGBA_LOG		:= 1
+
+
 
 #
 # Files
@@ -29,7 +23,7 @@ ROM_VERSION	:=
 #
 
 # Binary files to process with bin2s
-BINARY_FILES	:= src/hello.bin
+BINARY_FILES	:=
 
 # Graphics files to process with grit
 #
