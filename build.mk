@@ -54,7 +54,7 @@ LD	:= $(if $(call is-cxx,$(SOURCES)),$(CXX),$(CC))
 BIN2S	:= $(DEVKITPRO)/tools/bin/bin2s
 GBAFIX	:= $(DEVKITPRO)/tools/bin/gbafix
 GRIT	:= $(DEVKITPRO)/tools/bin/grit
-RUNNER	:= mgba-qt
+RUNNER	:= mgba
 
 # Primary build artifacts
 ELFFILE	:= $(BUILDDIR)/$(PROJECT).elf
