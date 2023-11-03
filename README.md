@@ -16,6 +16,7 @@ It'll build the `lib/libfurball.a`
 #### Makefile options
 
 If you change any Makefile option, you need to run `make clean` before running `make`.
+Also, note that `1` is just an arbitrary value;  It is enabled when the value is not empty.
 
 * `FB_MGBA_LOG := 1` : enables mGBA logging.
 
