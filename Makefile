@@ -12,8 +12,8 @@ BUILD_LIB	:= yes
 # see `README.md` for details.
 #
 
-# FB_MGBA_LOG		:= 1
-
+# FB_MGBA_LOG_ENABLED			:= 1
+# FB_MGBA_LOG_MAY_FATAL_CRASH	:= 1
 
 
 #
@@ -33,7 +33,6 @@ GRAPHICS	:=
 
 # Source files to compile
 SOURCES		:= src/*.c
-SOURCES		+= $(if $(strip $(FB_MGBA_LOG)),pvt/src/mgba.c,)
 
 # Include directories
 INCLUDES	:= include pvt/include
@@ -69,7 +68,8 @@ ALLFLAGS	:= $(WARNINGS) -g3 -gdwarf-4 -O2 \
 		-ffunction-sections -fdata-sections \
 		-masm-syntax-unified \
 		-D_DEFAULT_SOURCE \
-		$(if $(strip $(FB_MGBA_LOG)),-DFB_MGBA_LOG,)
+		$(if $(strip $(FB_MGBA_LOG_ENABLED)),-DFB_MGBA_LOG_ENABLED,) \
+		$(if $(strip $(FB_MGBA_LOG_MAY_FATAL_CRASH)),-DFB_MGBA_LOG_MAY_FATAL_CRASH,) \
 
 # C compiler flags
 CFLAGS		:= -std=c11

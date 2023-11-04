@@ -18,8 +18,10 @@ It'll build the `lib/libfurball.a`
 If you change any Makefile option, you need to run `make clean` before running `make`.
 Also, note that `1` is just an arbitrary value;  It is enabled when the value is not empty.
 
-* `FB_MGBA_LOG := 1` : enables mGBA logging.
-
+* `FB_MGBA_LOG_ENABLED := 1`
+    + Enables mGBA logging.
+* `FB_MGBA_LOG_MAY_FATAL_CRASH := 1`
+    + If enabled, `FB_LOG_MAY_FATAL(...)` is FATAL (crash). Otherwise, it's ERROR (not crash).
 
 ### Using the converter
 
