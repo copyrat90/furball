@@ -32,7 +32,7 @@
 #define FB_REG_SND3FREQ    *((volatile uint16_t*)(FB_MEM_IO + 0x74)) // Sound 3 Frequency, reset and loop control
 #define FB_REG_SND4CNT     *((volatile uint16_t*)(FB_MEM_IO + 0x78)) // Sound 4 Length, output level and envelope control
 #define FB_REG_SND4FREQ    *((volatile uint16_t*)(FB_MEM_IO + 0x7C)) // Sound 4 Noise parameters, reset and loop control
-#define FB_REG_SNDDMGCN    *((volatile uint16_t*)(FB_MEM_IO + 0x80)) // Sound 1-4 Output level and Stereo control
+#define FB_REG_SNDDMGCNT    *((volatile uint16_t*)(FB_MEM_IO + 0x80)) // Sound 1-4 Output level and Stereo control
 #define FB_REG_SNDDSCNT    *((volatile uint16_t*)(FB_MEM_IO + 0x82)) // Direct Sound control and Sound 1-4 output ratio
 #define FB_REG_SNDSTAT     *((volatile uint16_t*)(FB_MEM_IO + 0x84)) // Master sound enable and Sound 1-4 play status
 #define FB_REG_SNDBIAS     *((volatile uint16_t*)(FB_MEM_IO + 0x88)) // Sound bias and Amplitude resolution control
@@ -126,7 +126,7 @@
 #define FB_SND1FREQ_FREQUENCY_SET(n)    ((n) & 0x7FF) // WO
 #define FB_SND1FREQ_FREQUENCY_GET(n)    ((n) & 0x7FF) // Internal use
 
-#define FB_SND1FREQ_ONE_SHOT            (1 << 14) // R/W
+#define FB_SND1FREQ_LENGTH_ENABLE       (1 << 14) // R/W
 
 #define FB_SND1FREQ_RESTART             (1 << 15) // WO
 
@@ -155,7 +155,7 @@
 #define FB_SND2FREQ_FREQUENCY_SET(n)    ((n) & 0x7FF) // WO
 #define FB_SND2FREQ_FREQUENCY_GET(n)    ((n) & 0x7FF) // Internal use
 
-#define FB_SND2FREQ_ONE_SHOT            (1 << 14) // R/W
+#define FB_SND2FREQ_LENGTH_ENABLE       (1 << 14) // R/W
 
 #define FB_SND2FREQ_RESTART             (1 << 15) // WO
 
@@ -187,7 +187,7 @@
 #define FB_SND3FREQ_SAMPLE_RATE_SET(n)  ((n) & 0x7FF) // WO
 #define FB_SND3FREQ_SAMPLE_RATE_GET(n)  ((n) & 0x7FF) // Internal use
 
-#define FB_SND3FREQ_ONE_SHOT            (1 << 14) // R/W
+#define FB_SND3FREQ_LENGTH_ENABLE       (1 << 14) // R/W
 
 #define FB_SND3FREQ_RESTART             (1 << 15) // WO
 
@@ -216,7 +216,7 @@
 #define FB_SND4FREQ_FREQUENCY_SET(n)    (((n) & 0xF) << 4) // R/W
 #define FB_SND4FREQ_FREQUENCY_GET(n)    (((n) >> 4) & 0xF)
 
-#define FB_SND4FREQ_ONE_SHOT            (1 << 14) // R/W
+#define FB_SND4FREQ_LENGTH_ENABLE       (1 << 14) // R/W
 
 #define FB_SND4FREQ_RESTART             (1 << 15) // WO
 
