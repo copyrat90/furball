@@ -1,7 +1,7 @@
 # Furball
 
 Furball is a sound library for the Game Boy Advance.\
-It lets you play the [Furnace](https://github.com/tildearrow/furnace) DMG + PCM songs on the GBA.
+It lets you play the [Furnace](https://github.com/tildearrow/furnace) DMG + PCM music on the GBA.
 
 > TODO
 

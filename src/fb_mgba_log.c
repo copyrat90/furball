@@ -30,12 +30,12 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#define REG_MGBA_DEBUG_ENABLE *((volatile uint16_t*)0x4FFF780)
-#define REG_MGBA_DEBUG_FLAGS *((volatile uint16_t*)0x4FFF700)
-#define REG_MGBA_DEBUG_STRING ((char*)0x4FFF600)
+#define REG_MGBA_DEBUG_ENABLE *((volatile uint16_t *)0x4FFF780)
+#define REG_MGBA_DEBUG_FLAGS *((volatile uint16_t *)0x4FFF700)
+#define REG_MGBA_DEBUG_STRING ((char *)0x4FFF600)
 #endif // FB_MGBA_LOG_ENABLED
 
-void fb_mgba_printf(fb_mgba_log_level log_level, const char* str, ...)
+void fb_mgba_printf(fb_mgba_log_level log_level, const char *str, ...)
 {
 #ifdef FB_MGBA_LOG_ENABLED
     REG_MGBA_DEBUG_ENABLE = 0xC0DE;

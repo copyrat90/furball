@@ -4,7 +4,7 @@ IndentWidth: 4
 ---
 Language: Cpp
 DerivePointerAlignment: false
-PointerAlignment: Left
+PointerAlignment: Right
 AlignEscapedNewlines: DontAlign
 IndentExternBlock: NoIndent
 ---

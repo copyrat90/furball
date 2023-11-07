@@ -40,7 +40,7 @@ typedef enum
     FB_MGBA_LOG_LEVEL_DEBUG = 4,
 } fb_mgba_log_level;
 
-void fb_mgba_printf(fb_mgba_log_level, const char* str, ...);
+void fb_mgba_printf(fb_mgba_log_level, const char *str, ...);
 
 #ifdef FB_MGBA_LOG_ENABLED
 #define FB_LOG(log_level, ...) fb_mgba_printf(log_level, __VA_ARGS__)

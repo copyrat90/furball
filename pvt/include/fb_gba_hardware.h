@@ -29,69 +29,69 @@
 // ---------------
 
 // Sound registers
-#define FB_REG_SND1SWEEP   *((volatile uint16_t*)(FB_MEM_IO + 0x60)) // Sound 1 Sweep control
-#define FB_REG_SND1CNT     *((volatile uint16_t*)(FB_MEM_IO + 0x62)) // Sound 1 Length, wave duty and envelope control
-#define FB_REG_SND1FREQ    *((volatile uint16_t*)(FB_MEM_IO + 0x64)) // Sound 1 Frequency, reset and loop control
-#define FB_REG_SND2CNT     *((volatile uint16_t*)(FB_MEM_IO + 0x68)) // Sound 2 Lenght, wave duty and envelope control
-#define FB_REG_SND2FREQ    *((volatile uint16_t*)(FB_MEM_IO + 0x6C)) // Sound 2 Frequency, reset and loop control
-#define FB_REG_SND3SEL     *((volatile uint16_t*)(FB_MEM_IO + 0x70)) // Sound 3 Enable and wave ram bank control
-#define FB_REG_SND3CNT     *((volatile uint16_t*)(FB_MEM_IO + 0x72)) // Sound 3 Sound lenght and output level control
-#define FB_REG_SND3FREQ    *((volatile uint16_t*)(FB_MEM_IO + 0x74)) // Sound 3 Frequency, reset and loop control
-#define FB_REG_SND4CNT     *((volatile uint16_t*)(FB_MEM_IO + 0x78)) // Sound 4 Length, output level and envelope control
-#define FB_REG_SND4FREQ    *((volatile uint16_t*)(FB_MEM_IO + 0x7C)) // Sound 4 Noise parameters, reset and loop control
-#define FB_REG_SNDDMGCNT    *((volatile uint16_t*)(FB_MEM_IO + 0x80)) // Sound 1-4 Output level and Stereo control
-#define FB_REG_SNDDSCNT    *((volatile uint16_t*)(FB_MEM_IO + 0x82)) // Direct Sound control and Sound 1-4 output ratio
-#define FB_REG_SNDSTAT     *((volatile uint16_t*)(FB_MEM_IO + 0x84)) // Master sound enable and Sound 1-4 play status
-#define FB_REG_SNDBIAS     *((volatile uint16_t*)(FB_MEM_IO + 0x88)) // Sound bias and Amplitude resolution control
+#define FB_REG_SND1SWEEP   *((volatile uint16_t *)(FB_MEM_IO + 0x60)) // Sound 1 Sweep control
+#define FB_REG_SND1CNT     *((volatile uint16_t *)(FB_MEM_IO + 0x62)) // Sound 1 Length, wave duty and envelope control
+#define FB_REG_SND1FREQ    *((volatile uint16_t *)(FB_MEM_IO + 0x64)) // Sound 1 Frequency, reset and loop control
+#define FB_REG_SND2CNT     *((volatile uint16_t *)(FB_MEM_IO + 0x68)) // Sound 2 Lenght, wave duty and envelope control
+#define FB_REG_SND2FREQ    *((volatile uint16_t *)(FB_MEM_IO + 0x6C)) // Sound 2 Frequency, reset and loop control
+#define FB_REG_SND3SEL     *((volatile uint16_t *)(FB_MEM_IO + 0x70)) // Sound 3 Enable and wave ram bank control
+#define FB_REG_SND3CNT     *((volatile uint16_t *)(FB_MEM_IO + 0x72)) // Sound 3 Sound lenght and output level control
+#define FB_REG_SND3FREQ    *((volatile uint16_t *)(FB_MEM_IO + 0x74)) // Sound 3 Frequency, reset and loop control
+#define FB_REG_SND4CNT     *((volatile uint16_t *)(FB_MEM_IO + 0x78)) // Sound 4 Length, output level and envelope control
+#define FB_REG_SND4FREQ    *((volatile uint16_t *)(FB_MEM_IO + 0x7C)) // Sound 4 Noise parameters, reset and loop control
+#define FB_REG_SNDDMGCNT    *((volatile uint16_t *)(FB_MEM_IO + 0x80)) // Sound 1-4 Output level and Stereo control
+#define FB_REG_SNDDSCNT    *((volatile uint16_t *)(FB_MEM_IO + 0x82)) // Direct Sound control and Sound 1-4 output ratio
+#define FB_REG_SNDSTAT     *((volatile uint16_t *)(FB_MEM_IO + 0x84)) // Master sound enable and Sound 1-4 play status
+#define FB_REG_SNDBIAS     *((volatile uint16_t *)(FB_MEM_IO + 0x88)) // Sound bias and Amplitude resolution control
 
 // Sound buffers
-#define FB_REG_WAVE_RAM       ((volatile uint32_t*)(FB_MEM_IO + 0x90)) // Sound 3 samples pointer
-#define FB_REG_WAVE_RAM_0    *((volatile uint32_t*)(FB_MEM_IO + 0x90)) // Sound 3 samples 0-7
-#define FB_REG_WAVE_RAM_0_L  *((volatile uint16_t*)(FB_MEM_IO + 0x90)) // Sound 3 samples 0-3
-#define FB_REG_WAVE_RAM_0_H  *((volatile uint16_t*)(FB_MEM_IO + 0x90)) // Sound 3 samples 4-7
-#define FB_REG_WAVE_RAM_1    *((volatile uint32_t*)(FB_MEM_IO + 0x94)) // Sound 3 samples 8-15
-#define FB_REG_WAVE_RAM_1_L  *((volatile uint16_t*)(FB_MEM_IO + 0x94)) // Sound 3 samples 8-11
-#define FB_REG_WAVE_RAM_1_H  *((volatile uint16_t*)(FB_MEM_IO + 0x94)) // Sound 3 samples 12-15
-#define FB_REG_WAVE_RAM_2    *((volatile uint32_t*)(FB_MEM_IO + 0x98)) // Sound 3 samples 16-23
-#define FB_REG_WAVE_RAM_2_L  *((volatile uint16_t*)(FB_MEM_IO + 0x98)) // Sound 3 samples 16-19
-#define FB_REG_WAVE_RAM_2_H  *((volatile uint16_t*)(FB_MEM_IO + 0x98)) // Sound 3 samples 20-23
-#define FB_REG_WAVE_RAM_3    *((volatile uint32_t*)(FB_MEM_IO + 0x9C)) // Sound 3 samples 24-31
-#define FB_REG_WAVE_RAM_3_L  *((volatile uint16_t*)(FB_MEM_IO + 0x9C)) // Sound 3 samples 24-27
-#define FB_REG_WAVE_RAM_3_H  *((volatile uint16_t*)(FB_MEM_IO + 0x9C)) // Sound 3 samples 28-31
-#define FB_REG_FIFO_A        *((volatile uint32_t*)(FB_MEM_IO + 0xA0)) // Direct Sound channel A samples
-#define FB_REG_FIFO_B        *((volatile uint32_t*)(FB_MEM_IO + 0xA4)) // Direct Sound channel B samples
+#define FB_REG_WAVE_RAM       ((volatile uint32_t *)(FB_MEM_IO + 0x90)) // Sound 3 samples pointer
+#define FB_REG_WAVE_RAM_0    *((volatile uint32_t *)(FB_MEM_IO + 0x90)) // Sound 3 samples 0-7
+#define FB_REG_WAVE_RAM_0_L  *((volatile uint16_t *)(FB_MEM_IO + 0x90)) // Sound 3 samples 0-3
+#define FB_REG_WAVE_RAM_0_H  *((volatile uint16_t *)(FB_MEM_IO + 0x90)) // Sound 3 samples 4-7
+#define FB_REG_WAVE_RAM_1    *((volatile uint32_t *)(FB_MEM_IO + 0x94)) // Sound 3 samples 8-15
+#define FB_REG_WAVE_RAM_1_L  *((volatile uint16_t *)(FB_MEM_IO + 0x94)) // Sound 3 samples 8-11
+#define FB_REG_WAVE_RAM_1_H  *((volatile uint16_t *)(FB_MEM_IO + 0x94)) // Sound 3 samples 12-15
+#define FB_REG_WAVE_RAM_2    *((volatile uint32_t *)(FB_MEM_IO + 0x98)) // Sound 3 samples 16-23
+#define FB_REG_WAVE_RAM_2_L  *((volatile uint16_t *)(FB_MEM_IO + 0x98)) // Sound 3 samples 16-19
+#define FB_REG_WAVE_RAM_2_H  *((volatile uint16_t *)(FB_MEM_IO + 0x98)) // Sound 3 samples 20-23
+#define FB_REG_WAVE_RAM_3    *((volatile uint32_t *)(FB_MEM_IO + 0x9C)) // Sound 3 samples 24-31
+#define FB_REG_WAVE_RAM_3_L  *((volatile uint16_t *)(FB_MEM_IO + 0x9C)) // Sound 3 samples 24-27
+#define FB_REG_WAVE_RAM_3_H  *((volatile uint16_t *)(FB_MEM_IO + 0x9C)) // Sound 3 samples 28-31
+#define FB_REG_FIFO_A        *((volatile uint32_t *)(FB_MEM_IO + 0xA0)) // Direct Sound channel A samples
+#define FB_REG_FIFO_B        *((volatile uint32_t *)(FB_MEM_IO + 0xA4)) // Direct Sound channel B samples
 
 // DMA registers
-#define FB_REG_DMA0SAD     *((volatile uint32_t*)(FB_MEM_IO + 0xB0)) // DMA 0 Source address
-#define FB_REG_DMA0DAD     *((volatile uint32_t*)(FB_MEM_IO + 0xB4)) // DMA 0 Destination address
-#define FB_REG_DMA0CNT     *((volatile uint32_t*)(FB_MEM_IO + 0xB8)) // DMA 0 Control
-#define FB_REG_DMA0CNT_L   *((volatile uint16_t*)(FB_MEM_IO + 0xB8)) // DMA 0 Control (Low)
-#define FB_REG_DMA0CNT_H   *((volatile uint16_t*)(FB_MEM_IO + 0xBA)) // DMA 0 Control (High)
-#define FB_REG_DMA1SAD     *((volatile uint32_t*)(FB_MEM_IO + 0xBC)) // DMA 1 Source address
-#define FB_REG_DMA1DAD     *((volatile uint32_t*)(FB_MEM_IO + 0xC0)) // DMA 1 Destination address
-#define FB_REG_DMA1CNT     *((volatile uint32_t*)(FB_MEM_IO + 0xC4)) // DMA 1 Control
-#define FB_REG_DMA1CNT_L   *((volatile uint16_t*)(FB_MEM_IO + 0xC4)) // DMA 1 Control (Low)
-#define FB_REG_DMA1CNT_H   *((volatile uint16_t*)(FB_MEM_IO + 0xC6)) // DMA 1 Control (High)
-#define FB_REG_DMA2SAD     *((volatile uint32_t*)(FB_MEM_IO + 0xC8)) // DMA 2 Source address
-#define FB_REG_DMA2DAD     *((volatile uint32_t*)(FB_MEM_IO + 0xCC)) // DMA 2 Destination address
-#define FB_REG_DMA2CNT     *((volatile uint32_t*)(FB_MEM_IO + 0xD0)) // DMA 2 Control
-#define FB_REG_DMA2CNT_L   *((volatile uint16_t*)(FB_MEM_IO + 0xD0)) // DMA 2 Control (Low)
-#define FB_REG_DMA2CNT_H   *((volatile uint16_t*)(FB_MEM_IO + 0xD2)) // DMA 2 Control (High)
-#define FB_REG_DMA3SAD     *((volatile uint32_t*)(FB_MEM_IO + 0xD4)) // DMA 3 Source address
-#define FB_REG_DMA3DAD     *((volatile uint32_t*)(FB_MEM_IO + 0xD8)) // DMA 3 Destination address
-#define FB_REG_DMA3CNT     *((volatile uint32_t*)(FB_MEM_IO + 0xDC)) // DMA 3 Control
-#define FB_REG_DMA3CNT_L   *((volatile uint16_t*)(FB_MEM_IO + 0xDC)) // DMA 3 Control (Low)
-#define FB_REG_DMA3CNT_H   *((volatile uint16_t*)(FB_MEM_IO + 0xDE)) // DMA 3 Control (High)
+#define FB_REG_DMA0SAD     *((volatile uint32_t *)(FB_MEM_IO + 0xB0)) // DMA 0 Source address
+#define FB_REG_DMA0DAD     *((volatile uint32_t *)(FB_MEM_IO + 0xB4)) // DMA 0 Destination address
+#define FB_REG_DMA0CNT     *((volatile uint32_t *)(FB_MEM_IO + 0xB8)) // DMA 0 Control
+#define FB_REG_DMA0CNT_L   *((volatile uint16_t *)(FB_MEM_IO + 0xB8)) // DMA 0 Control (Low)
+#define FB_REG_DMA0CNT_H   *((volatile uint16_t *)(FB_MEM_IO + 0xBA)) // DMA 0 Control (High)
+#define FB_REG_DMA1SAD     *((volatile uint32_t *)(FB_MEM_IO + 0xBC)) // DMA 1 Source address
+#define FB_REG_DMA1DAD     *((volatile uint32_t *)(FB_MEM_IO + 0xC0)) // DMA 1 Destination address
+#define FB_REG_DMA1CNT     *((volatile uint32_t *)(FB_MEM_IO + 0xC4)) // DMA 1 Control
+#define FB_REG_DMA1CNT_L   *((volatile uint16_t *)(FB_MEM_IO + 0xC4)) // DMA 1 Control (Low)
+#define FB_REG_DMA1CNT_H   *((volatile uint16_t *)(FB_MEM_IO + 0xC6)) // DMA 1 Control (High)
+#define FB_REG_DMA2SAD     *((volatile uint32_t *)(FB_MEM_IO + 0xC8)) // DMA 2 Source address
+#define FB_REG_DMA2DAD     *((volatile uint32_t *)(FB_MEM_IO + 0xCC)) // DMA 2 Destination address
+#define FB_REG_DMA2CNT     *((volatile uint32_t *)(FB_MEM_IO + 0xD0)) // DMA 2 Control
+#define FB_REG_DMA2CNT_L   *((volatile uint16_t *)(FB_MEM_IO + 0xD0)) // DMA 2 Control (Low)
+#define FB_REG_DMA2CNT_H   *((volatile uint16_t *)(FB_MEM_IO + 0xD2)) // DMA 2 Control (High)
+#define FB_REG_DMA3SAD     *((volatile uint32_t *)(FB_MEM_IO + 0xD4)) // DMA 3 Source address
+#define FB_REG_DMA3DAD     *((volatile uint32_t *)(FB_MEM_IO + 0xD8)) // DMA 3 Destination address
+#define FB_REG_DMA3CNT     *((volatile uint32_t *)(FB_MEM_IO + 0xDC)) // DMA 3 Control
+#define FB_REG_DMA3CNT_L   *((volatile uint16_t *)(FB_MEM_IO + 0xDC)) // DMA 3 Control (Low)
+#define FB_REG_DMA3CNT_H   *((volatile uint16_t *)(FB_MEM_IO + 0xDE)) // DMA 3 Control (High)
 
 // Timer registers
-#define FB_REG_TM0D        *((volatile uint16_t*)(FB_MEM_IO + 0x100)) // Timer 0 data
-#define FB_REG_TM0CNT      *((volatile uint16_t*)(FB_MEM_IO + 0x102)) // Timer 0 control
-#define FB_REG_TM1D        *((volatile uint16_t*)(FB_MEM_IO + 0x104)) // Timer 1 data
-#define FB_REG_TM1CNT      *((volatile uint16_t*)(FB_MEM_IO + 0x106)) // Timer 1 control
-#define FB_REG_TM2D        *((volatile uint16_t*)(FB_MEM_IO + 0x108)) // Timer 2 data
-#define FB_REG_TM2CNT      *((volatile uint16_t*)(FB_MEM_IO + 0x10A)) // Timer 2 control
-#define FB_REG_TM3D        *((volatile uint16_t*)(FB_MEM_IO + 0x10C)) // Timer 3 data
-#define FB_REG_TM3CNT      *((volatile uint16_t*)(FB_MEM_IO + 0x10E)) // Timer 3 control
+#define FB_REG_TM0D        *((volatile uint16_t *)(FB_MEM_IO + 0x100)) // Timer 0 data
+#define FB_REG_TM0CNT      *((volatile uint16_t *)(FB_MEM_IO + 0x102)) // Timer 0 control
+#define FB_REG_TM1D        *((volatile uint16_t *)(FB_MEM_IO + 0x104)) // Timer 1 data
+#define FB_REG_TM1CNT      *((volatile uint16_t *)(FB_MEM_IO + 0x106)) // Timer 1 control
+#define FB_REG_TM2D        *((volatile uint16_t *)(FB_MEM_IO + 0x108)) // Timer 2 data
+#define FB_REG_TM2CNT      *((volatile uint16_t *)(FB_MEM_IO + 0x10A)) // Timer 2 control
+#define FB_REG_TM3D        *((volatile uint16_t *)(FB_MEM_IO + 0x10C)) // Timer 3 data
+#define FB_REG_TM3CNT      *((volatile uint16_t *)(FB_MEM_IO + 0x10E)) // Timer 3 control
 
 
 // Register values

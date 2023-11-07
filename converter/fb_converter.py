@@ -3,7 +3,7 @@ import struct
 from dataclasses import dataclass
 
 from chipchune.furnace.module import FurnaceModule, FurnacePattern
-from chipchune.furnace.data_types import FurnaceRow
+from chipchune.furnace.data_types import FurnaceRow, ChipInfo
 from chipchune.furnace.enums import ChipType, Note
 
 from fb_exceptions import *
@@ -29,11 +29,69 @@ class FurballModule:
 
 
     def write_file(self, output_file_path: str, c_array_name: str):
+        output_file_basename = os.path.basename(output_file_path)
+
         try:
             with open(output_file_path, "w") as f:
                 total_used_bytes = 0
+                f.write("#include <stddef.h>" + "\n")
                 f.write("#include <stdint.h>" + "\n\n")
 
+                gb_chips = list(filter(lambda ci: ci.type == ChipType.GB, self.module.chips.list))
+                if len(gb_chips) > 1:
+                    raise TooManyGBChipsError(len(gb_chips))
+                gb_chip: ChipInfo = gb_chips[0]
+
+                # invert ch3 wavetable
+                is_gba = gb_chip.flags["chipType"] == 3 if "chipType" in gb_chip.flags else False
+                raw_invert = gb_chip.flags["invertWave"] if "invertWave" in gb_chip.flags else True
+                real_invert: bool = not (is_gba ^ raw_invert)
+
+                def inv(val: int) -> int:
+                    assert 0 <= val <= 0xF
+                    return 0xF - val if real_invert else val
+
+                # wavetables
+                for w_idx, wavetable in enumerate(self.module.wavetables):
+                    f.write(f"static const uint32_t {c_array_name}_ch3_wt{w_idx}[] = {{" + "\n")
+
+                    width = wavetable.meta.width
+                    height = wavetable.meta.height
+                    if height != 16 or (width != 32 and width != 64):
+                        UnsupportedCh3WavetableSizeError(width, height)
+                    if max(wavetable.data) >= 16:
+                        UnsupportedCh3WavetableValueError(max(wavetable.data))
+
+                    f.write(f"{width}, // width")
+                    total_used_bytes += 4
+
+                    for i in range(width // 8):
+                        if i % 4 == 0:
+                            f.write(f"\n")
+                        # 4 byte little endian
+                        data = wavetable.data
+                        val  = (inv(data[8*i + 0]) <<  4) | (inv(data[8*i + 1]) <<  0)
+                        val |= (inv(data[8*i + 2]) << 12) | (inv(data[8*i + 3]) <<  8)
+                        val |= (inv(data[8*i + 4]) << 20) | (inv(data[8*i + 5]) << 16)
+                        val |= (inv(data[8*i + 6]) << 28) | (inv(data[8*i + 7]) << 24)
+                        f.write(f"0x{val:08x},")
+                        total_used_bytes += 4
+
+                    f.write("\n" + "};" + "\n")
+
+                # wavetables ptr array
+                if not self.module.wavetables:
+                    f.write(f"static const uint32_t *const *const {c_array_name}_ch3_wavetables = NULL;" + "\n")
+                else:
+                    f.write(f"static const uint32_t *const {c_array_name}_ch3_wavetables[] = {{")
+                    for w_idx in range(len(self.module.wavetables)):
+                        if w_idx % 4 == 0:
+                            f.write(f"\n")
+                        f.write(f"{c_array_name}_ch3_wt{w_idx},")
+                        total_used_bytes += 4
+                    f.write("\n" + "};" + "\n")
+
+                # patterns
                 @dataclass
                 class PatternFlags:
                     vol: bool = False
@@ -104,7 +162,7 @@ class FurballModule:
                     order: List[int] = self.module.subsongs[0].order[channel]
 
                     f.write(
-                        f"static const uint8_t* const {c_array_name}_ch{channel}_ord[] = {{"
+                        f"static const uint8_t *const {c_array_name}_ch{channel}_ord[] = {{"
                     )
                     for i, num in enumerate(order):
                         if i % 4 == 0:
@@ -114,11 +172,13 @@ class FurballModule:
 
                     f.write("\n" + "};" + "\n")
 
-            print(f'"{os.path.basename(output_file_path)}" ({total_used_bytes} bytes in ROM)')
+            print(f'"{output_file_basename}" ({total_used_bytes} bytes in ROM)')
 
         except (OSError, IOError) as e:
+            print(f'"{output_file_basename}" convert FAILED!')
             raise
         except Exception as e:
+            print(f'"{output_file_basename}" convert FAILED!')
             if os.path.exists(output_file_path) and os.path.isfile(output_file_path):
                 os.remove(output_file_path)
             raise
