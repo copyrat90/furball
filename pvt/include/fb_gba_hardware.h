@@ -1,3 +1,10 @@
+// SPDX-License-Identifier: MIT
+//
+// Copyright (c) 2020-2022 Antonio Niño Díaz
+
+// This source is a modified version of https://github.com/AntonioND/libugba/blob/master/include/ugba/hardware.h
+// modified by copyrat90
+
 // I/O registers naming scheme : Tonc's
 // their values  naming scheme : UGBA's
 
