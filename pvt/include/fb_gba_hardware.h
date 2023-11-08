@@ -130,8 +130,8 @@
 
 // SND1FREQ (NR13, NR14) (SOUND1CNT_X)
 
-#define FB_SND1FREQ_FREQUENCY_SET(n)    ((n) & 0x7FF) // WO
-#define FB_SND1FREQ_FREQUENCY_GET(n)    ((n) & 0x7FF) // Internal use
+#define FB_SND1FREQ_PERIOD_SET(n)    ((n) & 0x7FF) // WO
+#define FB_SND1FREQ_PERIOD_GET(n)    ((n) & 0x7FF) // Internal use
 
 #define FB_SND1FREQ_LENGTH_ENABLE       (1 << 14) // R/W
 
@@ -159,8 +159,8 @@
 
 // SND2FREQ (NR23, NR24) (SOUND2CNT_H)
 
-#define FB_SND2FREQ_FREQUENCY_SET(n)    ((n) & 0x7FF) // WO
-#define FB_SND2FREQ_FREQUENCY_GET(n)    ((n) & 0x7FF) // Internal use
+#define FB_SND2FREQ_PERIOD_SET(n)    ((n) & 0x7FF) // WO
+#define FB_SND2FREQ_PERIOD_GET(n)    ((n) & 0x7FF) // Internal use
 
 #define FB_SND2FREQ_LENGTH_ENABLE       (1 << 14) // R/W
 
@@ -191,8 +191,8 @@
 
 // SND3FREQ (NR33, NR34) (SOUND3CNT_X)
 
-#define FB_SND3FREQ_SAMPLE_RATE_SET(n)  ((n) & 0x7FF) // WO
-#define FB_SND3FREQ_SAMPLE_RATE_GET(n)  ((n) & 0x7FF) // Internal use
+#define FB_SND3FREQ_PERIOD_SET(n)  ((n) & 0x7FF) // WO
+#define FB_SND3FREQ_PERIOD_GET(n)  ((n) & 0x7FF) // Internal use
 
 #define FB_SND3FREQ_LENGTH_ENABLE       (1 << 14) // R/W
 
@@ -220,8 +220,8 @@
 #define FB_SND4FREQ_WIDTH_15_BITS       (0 << 3) // R/W
 #define FB_SND4FREQ_WIDTH_7_BITS        (1 << 3)
 
-#define FB_SND4FREQ_FREQUENCY_SET(n)    (((n) & 0xF) << 4) // R/W
-#define FB_SND4FREQ_FREQUENCY_GET(n)    (((n) >> 4) & 0xF)
+#define FB_SND4FREQ_PRE_STEP_RATIO_SET(n)    (((n) & 0xF) << 4) // R/W
+#define FB_SND4FREQ_PRE_STEP_RATIO_GET(n)    (((n) >> 4) & 0xF)
 
 #define FB_SND4FREQ_LENGTH_ENABLE       (1 << 14) // R/W
 
