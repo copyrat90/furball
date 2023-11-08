@@ -24,10 +24,10 @@ class UnsupportedNoteError(Exception):
     def __init__(self, note: Note, octave: int, pattern: int, row: int):
         super().__init__(f'Unsupported note "{note} (oct {octave})" in {pattern=}, {row=}')
 
-class UnsupportedCh3WavetableSizeError(Exception):
+class UnsupportedWavetableSizeError(Exception):
     def __init__(self, wave_idx: int, width: int, height: int):
         super().__init__(f"Size of {wave_idx=} is {width}x{height} (use 32x16 or 64x16)")
 
-class UnsupportedCh3WavetableValueError(Exception):
+class UnsupportedWavetableValueError(Exception):
     def __init__(self, height_value: int):
-        super().__init__(f"Invalid ch3 wavetable {height_value=}")
+        super().__init__(f"Invalid wavetable {height_value=}")
