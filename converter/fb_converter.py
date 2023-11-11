@@ -90,6 +90,7 @@ class FurballModule:
                         for feature in inst.features:
                             if type(feature) == InsFeatureName:
                                 pass
+
                             elif type(feature) == InsFeatureGB:
                                 assert not has_gb
                                 has_gb = True
@@ -235,7 +236,10 @@ class FurballModule:
                                         assert False, f"Invalid {macro.kind=}"
 
                                     macro_darr_type_size = (
-                                        2 if macro_darr_type == "int16_t" else 1
+                                        2
+                                        if macro_darr_type == "int16_t"
+                                        or macro.kind == MacroCode.ARP
+                                        else 1
                                     )
 
                                     # write data
@@ -246,31 +250,16 @@ class FurballModule:
                                     for k, num in enumerate(macro_list.data):
                                         if k % 16 == 0:
                                             f.write("\n")
-                                        f.write(f"{num},")
-
-                                        # `num`: range check
-                                        if macro_darr_type == "uint8_t":
-                                            if not 0 <= num < 256:
-                                                raise ValueError(
-                                                    f"Invalid {num=} for uint8_t"
-                                                )
-                                        elif macro_darr_type == "int8_t":
-                                            if not -128 <= num < 128:
-                                                raise ValueError(
-                                                    f"Invalid {num=} for int8_t, perhaps fixed ARP in macro?"
-                                                )
-                                        elif macro_darr_type == "int16_t":
-                                            if not -32768 <= num < 32768:
-                                                raise ValueError(
-                                                    f"Invalid {num=} for int16_t"
-                                                )
-                                        elif macro_darr_type == "bool":
-                                            if not 0 <= num < 2:
-                                                raise ValueError(
-                                                    f"Invalid {num=} for bool"
-                                                )
+                                        if macro.kind == MacroCode.ARP:
+                                            neg: bool = num < 0
+                                            num = abs(num)
+                                            fixed_arp = bool(num & 0x40000000)
+                                            f.write(
+                                                f"{(num & 0xFF) * (-1 if neg else 1)},"
+                                            )
+                                            f.write(f"{str(fixed_arp).lower()},")
                                         else:
-                                            assert False, f"Invalid {macro_darr_type=}"
+                                            f.write(f"{num},")
 
                                     f.write("\n" + "};" + "\n")
                                     total_used_bytes += (
@@ -317,11 +306,39 @@ class FurballModule:
                                 f.write("\n" + "};" + "\n")
                                 # macros should be moved to array, so no need to increase `total_used_bytes` here
 
-                            # TODO: Feature - wave synth
-                            # elif type(feature) == InsFeatureWaveSynth:
-                            #     assert not has_wave_synth
-                            #     has_wave_synth = True
-                            #     pass
+                            elif type(feature) == InsFeatureWaveSynth:
+                                assert not has_wave_synth
+                                has_wave_synth = True
+
+                                wave_synth: InsFeatureWaveSynth = feature
+                                if wave_synth.enabled:
+                                    f.write(
+                                        f"static const fb_inst_wave_synth {c_var_name}_inst{inst_idx:02X}_wave_synth = {{"
+                                        + "\n"
+                                    )
+                                    f.write(
+                                        f".kind=FB_WAVE_SYNTH_KIND_{str(wave_synth.effect)},"
+                                        + "\n"
+                                    )
+                                    f.write(
+                                        f".global={str(wave_synth.global_effect).lower()},"
+                                        + "\n"
+                                    )
+                                    f.write(
+                                        f".wave_1={wave_synth.wave_indices[0]}," + "\n"
+                                    )
+                                    f.write(
+                                        f".wave_2={wave_synth.wave_indices[1]}," + "\n"
+                                    )
+                                    f.write(
+                                        f".rate_divider={wave_synth.rate_divider},"
+                                        + "\n"
+                                    )
+                                    f.write(f".speed={wave_synth.speed}," + "\n")
+                                    f.write(f".amount={wave_synth.params[0]}," + "\n")
+                                    f.write(f".power={wave_synth.params[1]}," + "\n")
+                                    f.write("};" + "\n")
+                                    total_used_bytes += 11
 
                             # TODO: Feature - sample
                             # elif type(feature) == InsFeatureAmiga:
@@ -423,8 +440,8 @@ class FurballModule:
 
                     width = wavetable.meta.width
                     height = wavetable.meta.height
-                    if height != 16 or (width != 32 and width != 64):
-                        raise UnsupportedWavetableSizeError(width, height)
+                    if width != 32 or height != 16:
+                        raise UnsupportedWavetableSizeError(w_idx, width, height)
                     if max(wavetable.data) >= 16:
                         raise UnsupportedWavetableValueError(max(wavetable.data))
 

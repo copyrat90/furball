@@ -106,7 +106,7 @@ typedef struct
 
     // VOL: uint8_t[]      (DMG soft_env: [0..15])
     //                     (PCM: [0..64])
-    // ARP: int8_t[]       ([-120..120])
+    // ARP: {i8, bool}[]   ([-120..120], fixed arp?)
     // DUTY: uint8_t[]     ([0..3])
     // WAVE: uint8_t[]     ([0..255])
     // PAN_*: int8_t[]     (DMG [0..3])
@@ -117,14 +117,47 @@ typedef struct
     const void *const data;
 } fb_inst_macro;
 
+typedef enum
+{
+    // Single-waveform
+    FB_WAVE_SYNTH_KIND_NONE = 0,
+    FB_WAVE_SYNTH_KIND_INVERT,
+    FB_WAVE_SYNTH_KIND_ADD,
+    FB_WAVE_SYNTH_KIND_SUBTRACT,
+    FB_WAVE_SYNTH_KIND_AVERAGE,
+    FB_WAVE_SYNTH_KIND_PHASE,
+    FB_WAVE_SYNTH_KIND_CHORUS,
+
+    // Dual-waveform
+    FB_WAVE_SYNTH_KIND_NONE_DUAL = 128,
+    FB_WAVE_SYNTH_KIND_WIPE,
+    FB_WAVE_SYNTH_KIND_FADE,
+    FB_WAVE_SYNTH_KIND_PING_PONG,
+    FB_WAVE_SYNTH_KIND_OVERLAY,
+    FB_WAVE_SYNTH_KIND_NEGATIVE_OVERLAY,
+    FB_WAVE_SYNTH_KIND_SLIDE,
+    FB_WAVE_SYNTH_KIND_MIX,
+    FB_WAVE_SYNTH_KIND_PHASE_MOD,
+} fb_wave_synth_kind;
+
 typedef struct
 {
-    // TODO
+    fb_wave_synth_kind kind;
+    bool global;
+
+    uint8_t wave_1;
+    uint8_t wave_2;
+
+    uint8_t rate_divider;
+    uint8_t speed; // actual speed = speed - 1
+
+    uint8_t amount;
+    uint8_t power; // only used for Phase Modulation
 } fb_inst_wave_synth;
 
 typedef struct
 {
-    // TODO
+    char todo; // TODO
 } fb_inst_sample;
 
 typedef enum

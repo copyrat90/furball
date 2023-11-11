@@ -47,7 +47,7 @@ class UnsupportedNoteError(Exception):
 class UnsupportedWavetableSizeError(Exception):
     def __init__(self, wave_idx: int, width: int, height: int):
         super().__init__(
-            f"Size of {wave_idx=} is {width}x{height} (use 32x16 or 64x16)"
+            f"Size of {wave_idx=} is {width}x{height} (only supports 32x16)"
         )
 
 
