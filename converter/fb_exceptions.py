@@ -1,6 +1,18 @@
 from chipchune.furnace.enums import ChipType, InstrumentType, Note
 
 
+class UnsupportedTickRateError(Exception):
+    def __init__(self, tick_rate: float):
+        super().__init__(
+            f"Unsupported {tick_rate=} (use tick_rate=60 (i.e. base tempo=150))"
+        )
+
+
+class InvalidTimeBaseError(Exception):
+    def __init__(self, time_base: int):
+        super().__init__(f"Invalid {time_base=} (set Speed-Divider to 1)")
+
+
 class TooManyChipsError(Exception):
     MAX_CHIPS = 1
 

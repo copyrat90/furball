@@ -34,6 +34,11 @@ class FurballModule:
         module = FurnaceModule(furnace_module_path)
 
         # Check if module is valid for Furball
+        song = module.subsongs[0]
+        if song.timing.clock_speed != 60.0:
+            raise UnsupportedTickRateError(song.timing.clock_speed)
+        if song.timing.timebase != 1:
+            raise InvalidTimeBaseError(song.timing.timebase)
         if len(module.chips.list) > TooManyChipsError.MAX_CHIPS:
             raise TooManyChipsError(len(module.chips.list))
         if len(module.instruments) > TooManyInstrumentsError.MAX_INSTRUMENTS:
@@ -52,12 +57,16 @@ class FurballModule:
                 f'"{os.path.basename(module.file_name)}": ignored {len(module.subsongs) - 1} subsong(s)'
             )
 
-    def write_file(self, output_file_path: str, c_var_name: str):
+    def write_file(self, output_file_path: str, c_var_name: str) -> int:
+        """
+        :returns: total used bytes
+        """
         output_file_basename = os.path.basename(output_file_path)
 
         try:
             with open(output_file_path, "w") as f:
                 total_used_bytes = 0
+                song = self.module.subsongs[0]
 
                 f.write('#include "fb_music.h"' + "\n\n")
                 f.write("#include <stddef.h>" + "\n\n")
@@ -594,7 +603,7 @@ class FurballModule:
                         total_used_bytes += 8
 
                     # order table
-                    order: List[int] = self.module.subsongs[0].order[channel]
+                    order: List[int] = song.order[channel]
 
                     f.write(
                         f"static const fb_pattern *const {c_var_name}_ch{channel+1}_ord[] = {{"
@@ -607,26 +616,77 @@ class FurballModule:
 
                     f.write("\n" + "};" + "\n")
 
+                # speeds
+                f.write(f"static const uint8_t {c_var_name}_speeds[] = {{" + "\n")
+                speeds = song.speed_pattern if song.speed_pattern else song.timing.speed
+                for sp in speeds:
+                    f.write(f"{sp},")
+                f.write("\n" + "};" + "\n")
+                total_used_bytes += len(speeds)
+
+                # grooves
+                for grv_idx, grv in enumerate(song.grooves):
+                    if grv:
+                        f.write(
+                            f"static const uint8_t {c_var_name}_grv{grv_idx}_data[] = {{"
+                            + "\n"
+                        )
+                        for grv_val in grv:
+                            f.write(f"{grv_val},")
+                        f.write("\n" + "};" + "\n")
+                        total_used_bytes += len(grv)
+                    else:
+                        assert False, f"Groove 0x{grv_idx:02X} is empty"
+
+                    f.write(
+                        f"static const fb_groove {c_var_name}_grv{grv_idx} = {{" + "\n"
+                    )
+                    f.write(f".length={len(grv)}," + "\n")
+                    f.write(f".data={c_var_name}_grv{grv_idx}_data," + "\n")
+                    f.write("};" + "\n")
+                    total_used_bytes += 5
+
+                if song.grooves:
+                    f.write(f"static const fb_groove {c_var_name}_grooves[] = {{")
+
+                    for grv_idx in range(len(song.grooves)):
+                        if grv_idx % 4 == 0:
+                            f.write("\n")
+                        f.write(f"{c_var_name}_grv{grv_idx},")
+                    f.write("\n" + "};" + "\n")
+                    # no need to add `total_used_bytes` here either
+                else:
+                    f.write(
+                        f"static const fb_groove *const {c_var_name}_grooves = NULL;"
+                        + "\n"
+                    )
+
                 # fb_music
                 f.write("\n\n")
                 f.write("// ======== result ========" + "\n")
                 f.write(f"const fb_music {c_var_name} = {{" + "\n")
+                f.write(f".speeds={c_var_name}_speeds," + "\n")
+                f.write(f".speeds_length={len(speeds)}," + "\n")
+                f.write(
+                    f".virtual_tempo_numerator={song.timing.virtual_tempo[0]}," + "\n"
+                )
+                f.write(
+                    f".virtual_tempo_denominator={song.timing.virtual_tempo[1]}," + "\n"
+                )
+                f.write(f".grooves_count={len(song.grooves)}," + "\n")
+                f.write(f".grooves={c_var_name}_grooves," + "\n")
                 f.write(f".instruments_count={len(self.module.instruments)}," + "\n")
                 f.write(f".wavetables_count={len(self.module.wavetables)}," + "\n")
                 f.write(f".instruments={c_var_name}_instruments," + "\n")
                 f.write(f".wavetables={c_var_name}_wavetables," + "\n")
-                f.write(
-                    f".order_length={len(self.module.subsongs[0].order[0])}," + "\n"
-                )
-                f.write(
-                    f".pattern_length={self.module.subsongs[0].pattern_length}," + "\n"
-                )
+                f.write(f".order_length={len(song.order[0])}," + "\n")
+                f.write(f".pattern_length={song.pattern_length}," + "\n")
                 for dmg_ch in range(4):
                     f.write(
                         f".ch{dmg_ch+1}_order={c_var_name}_ch{dmg_ch+1}_ord," + "\n"
                     )
                 f.write("};" + "\n")
-                total_used_bytes += 32
+                total_used_bytes += 44
 
             logging.info(
                 f'"{output_file_basename}" written ({total_used_bytes} bytes in ROM)'
@@ -640,6 +700,8 @@ class FurballModule:
             if os.path.exists(output_file_path) and os.path.isfile(output_file_path):
                 os.remove(output_file_path)
             raise
+
+            return total_used_bytes
 
     def __get_note_octave(self, row: FurnaceRow) -> int:
         """

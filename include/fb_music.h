@@ -10,6 +10,12 @@ extern "C"
 
 typedef struct
 {
+    const uint8_t length; // [1..16]
+    const uint8_t *const data;
+} fb_groove;
+
+typedef struct
+{
     const uint16_t width;  // 32 or 64
     const uint16_t height; // 16 (always)
 
@@ -35,15 +41,22 @@ typedef struct
 
 typedef struct
 {
-    const uint16_t instruments_count; // [0..254]
-    const uint16_t wavetables_count;  // [0..255]
+    const uint8_t *const speeds; // [1..255] each
+    const uint8_t speeds_length; // [1..16]
 
+    const uint8_t virtual_tempo_numerator;   // [1..255]
+    const uint8_t virtual_tempo_denominator; // [1..255]
+
+    const uint8_t grooves_count;    // [0..255]
+    const fb_groove *const grooves; // [1..255] each
+
+    const uint16_t instruments_count;       // [0..254]
+    const uint16_t wavetables_count;        // [0..255]
     const fb_instrument *const instruments; // shared across DMG & PCM
-    const fb_wavetable *const wavetables; // only for ch3 (DMG WAV)
+    const fb_wavetable *const wavetables;   // only for ch3 (DMG WAV)
 
-    const uint16_t order_length;   // [0..256]
-    const uint16_t pattern_length; // [0..256]
-
+    const uint16_t order_length;              // [0..256]
+    const uint16_t pattern_length;            // [0..256]
     const fb_pattern *const *const ch1_order; // DMG PU1
     const fb_pattern *const *const ch2_order; // DMG PU2
     const fb_pattern *const *const ch3_order; // DMG WAV

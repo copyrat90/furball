@@ -142,22 +142,22 @@ typedef enum
 
 typedef struct
 {
-    fb_wave_synth_kind kind;
-    bool global;
+    const fb_wave_synth_kind kind;
+    const bool global;
 
-    uint8_t wave_1;
-    uint8_t wave_2;
+    const uint8_t wave_1;
+    const uint8_t wave_2;
 
-    uint8_t rate_divider;
-    uint8_t speed; // actual speed = speed - 1
+    const uint8_t rate_divider;
+    const uint8_t speed; // actual speed = speed - 1
 
-    uint8_t amount;
-    uint8_t power; // only used for Phase Modulation
+    const uint8_t amount;
+    const uint8_t power; // only used for Phase Modulation
 } fb_inst_wave_synth;
 
 typedef struct
 {
-    char todo; // TODO
+    const char todo; // TODO
 } fb_inst_sample;
 
 typedef enum
