@@ -1,11 +1,30 @@
 import os
+import logging
 import struct
-from dataclasses import dataclass
-from typing import List, Tuple, TextIO
+from dataclasses import dataclass, field
+from typing import List, Tuple, Union, TextIO
 
 from chipchune.furnace.module import FurnaceModule, FurnacePattern
-from chipchune.furnace.data_types import FurnaceRow, ChipInfo
-from chipchune.furnace.enums import ChipType, Note
+from chipchune.furnace.enums import (
+    ChipType,
+    InstrumentType,
+    Note,
+    GBHwCommand,
+    MacroCode,
+    MacroItem,
+)
+
+from chipchune.furnace.data_types import (
+    FurnaceRow,
+    ChipInfo,
+    GBHwSeq,
+    InsFeatureGB,
+    InsFeatureName,
+    InsFeatureMacro,
+    InsFeatureWaveSynth,
+    InsFeatureAmiga,
+    SingleMacro,
+)
 
 from fb_exceptions import *
 
@@ -29,8 +48,9 @@ class FurballModule:
         self.module = module
 
         if len(module.subsongs) > 1:
-            print(f'[WARN] "{os.path.basename(furnace_module_path)}": ignored {len(module.subsongs) - 1} subsong(s)')
-
+            logging.warning(
+                f'"{os.path.basename(module.file_name)}": ignored {len(module.subsongs) - 1} subsong(s)'
+            )
 
     def write_file(self, output_file_path: str, c_var_name: str):
         output_file_basename = os.path.basename(output_file_path)
@@ -39,17 +59,353 @@ class FurballModule:
             with open(output_file_path, "w") as f:
                 total_used_bytes = 0
 
-                self.__write_fb_music_structs(f)
+                f.write('#include "fb_music.h"' + "\n\n")
+                f.write("#include <stddef.h>" + "\n\n")
+
                 f.write(f"// declare this variable as extern in your source." + "\n")
                 f.write(f"extern const fb_music {c_var_name};" + "\n\n\n\n")
 
-                f.write("// ======== internal data ========" + "\n")
+                f.write("// ======== internal data ========" + "\n\n")
 
-                gb_chip: ChipInfo = list(filter(lambda ci: ci.type == ChipType.GB, self.module.chips.list))[0]
+                # instruments
+                for inst_idx, inst in enumerate(self.module.instruments):
+                    inst_kind = None
+                    if inst.meta.type == InstrumentType.GB:
+                        inst_kind = "GB"
+                    elif inst.meta.type == InstrumentType.AMIGA:
+                        inst_kind = "SAMPLE"
+                    else:
+                        raise UnsupportedInstrumentTypeError(inst.meta.type)
+
+                    has_gb: bool = False
+                    macros_count: int = None
+                    has_wave_synth: bool = False
+                    has_sample: bool = False
+
+                    if inst.meta.type not in (InstrumentType.GB, InstrumentType.AMIGA):
+                        logging.warning(
+                            f'"{os.path.basename(self.module.file_name)}": ignored instrument 0x{inst_idx:02X}={inst}'
+                        )
+                    else:
+                        for feature in inst.features:
+                            if type(feature) == InsFeatureName:
+                                pass
+                            elif type(feature) == InsFeatureGB:
+                                assert not has_gb
+                                has_gb = True
+                                gb: InsFeatureGB = feature
+
+                                # GB hardware sequence
+                                if gb.hw_seq:
+                                    f.write(
+                                        f"static const fb_gb_hw_cmd {c_var_name}_inst{inst_idx:02X}_gb_hw_seq[] = {{"
+                                        + "\n"
+                                    )
+                                    for hw_cmd in gb.hw_seq:
+                                        f.write("{.kind=FB_GB_HW_CMD_KIND_")
+                                        if hw_cmd.command == GBHwCommand.ENVELOPE:
+                                            f.write("ENVELOP," + "\n")
+                                            f.write(".envelop={" + "\n")
+                                            f.write(
+                                                f".volume={(hw_cmd.data[0] & 0b11110000) >> 4},"
+                                                + "\n"
+                                            )
+                                            f.write(
+                                                f".envelop_length={hw_cmd.data[0] & 0b111},"
+                                                + "\n"
+                                            )
+                                            f.write(
+                                                f".sound_length={hw_cmd.data[1]},"
+                                                + "\n"
+                                            )
+                                            f.write(
+                                                f".direction_up={str((hw_cmd.data[0] & 0b1000) != 0).lower()},"
+                                                + "\n"
+                                            )
+                                            f.write("},")
+                                        elif hw_cmd.command == GBHwCommand.SWEEP:
+                                            f.write("SWEEP," + "\n")
+                                            f.write(".sweep={" + "\n")
+                                            f.write(
+                                                f".shift={hw_cmd.data[0] & 0b111},"
+                                                + "\n"
+                                            )
+                                            f.write(
+                                                f".speed={(hw_cmd.data[0] & 0b1110000) >> 4},"
+                                                + "\n"
+                                            )
+                                            f.write(
+                                                f".direction_down={str((hw_cmd.data[0] & 0b1000) != 0).lower()},"
+                                                + "\n"
+                                            )
+                                            f.write("},")
+                                        elif hw_cmd.command == GBHwCommand.WAIT:
+                                            f.write("WAIT," + "\n")
+                                            f.write(".wait={" + "\n")
+                                            f.write(
+                                                f".length={hw_cmd.data[0]+1}," + "\n"
+                                            )
+                                            f.write("},")
+                                        elif hw_cmd.command == GBHwCommand.WAIT_REL:
+                                            f.write("WAIT_FOR_RELEASE," + "\n")
+                                        elif hw_cmd.command == GBHwCommand.LOOP:
+                                            f.write("LOOP," + "\n")
+                                            f.write(".loop={" + "\n")
+                                            f.write(
+                                                f".position={(hw_cmd.data[1] << 8) | (hw_cmd.data[0])},"
+                                                + "\n"
+                                            )
+                                            f.write("},")
+                                        elif hw_cmd.command == GBHwCommand.LOOP_REL:
+                                            f.write("LOOP_UNTIL_RELEASE," + "\n")
+                                            f.write(".loop={" + "\n")
+                                            f.write(
+                                                f".position={(hw_cmd.data[1] << 8) | (hw_cmd.data[0])},"
+                                                + "\n"
+                                            )
+                                            f.write("},")
+                                        else:
+                                            assert (
+                                                False
+                                            ), f"Invalid GBHwCommand={hw_cmd.command}"
+                                        f.write("}," + "\n")
+                                        total_used_bytes += 4 + 4
+                                    f.write("};" + "\n")
+                                else:
+                                    f.write(
+                                        f"static const fb_gb_hw_cmd *const {c_var_name}_inst{inst_idx:02X}_gb_hw_seq = NULL;"
+                                        + "\n"
+                                    )
+
+                                # GB instrument
+                                f.write(
+                                    f"static const fb_inst_gb {c_var_name}_inst{inst_idx:02X}_gb = {{"
+                                    + "\n"
+                                )
+                                f.write(f".initial_volume={gb.env_vol}," + "\n")
+                                f.write(f".envelop_length={gb.env_len}," + "\n")
+                                f.write(f".sound_length={gb.sound_len}," + "\n")
+                                f.write(
+                                    f".envelop_direction_up={str(bool(gb.env_dir)).lower()},"
+                                    + "\n"
+                                )
+                                f.write(
+                                    f".always_init_envelop={str(bool(gb.always_init)).lower()},"
+                                    + "\n"
+                                )
+                                f.write(
+                                    f".software_envelop={str(bool(gb.soft_env)).lower()},"
+                                    + "\n"
+                                )
+                                f.write(
+                                    f".hardware_sequence_length={len(gb.hw_seq)},"
+                                    + "\n"
+                                )
+                                f.write(
+                                    f".hardware_sequence={c_var_name}_inst{inst_idx:02X}_gb_hw_seq,"
+                                    + "\n"
+                                )
+                                f.write("};" + "\n")
+                                total_used_bytes += 12
+
+                            elif type(feature) == InsFeatureMacro:
+                                assert macros_count == None
+                                macros_count = len(feature.macros)
+
+                                # write single macro
+                                for m_idx, macro in enumerate(feature.macros):
+                                    macro_darr_type: str = ""
+                                    if macro.kind in (
+                                        MacroCode.VOL,
+                                        MacroCode.DUTY,
+                                        MacroCode.WAVE,
+                                    ):
+                                        macro_darr_type = "uint8_t"
+                                    elif macro.kind in (
+                                        MacroCode.ARP,
+                                        MacroCode.PAN_L,
+                                        MacroCode.PAN_R,
+                                    ):
+                                        macro_darr_type = "int8_t"
+                                    elif macro.kind == MacroCode.PITCH:
+                                        macro_darr_type = "int16_t"
+                                    elif macro.kind == MacroCode.PHASE_RESET:
+                                        macro_darr_type = "bool"
+                                    else:
+                                        assert False, f"Invalid {macro.kind=}"
+
+                                    macro_darr_type_size = (
+                                        2 if macro_darr_type == "int16_t" else 1
+                                    )
+
+                                    # write data
+                                    macro_list = self.__convert_macro_data(macro.data)
+                                    f.write(
+                                        f"static const {macro_darr_type} {c_var_name}_inst{inst_idx:02X}_macro{m_idx}_data[] = {{"
+                                    )
+                                    for k, num in enumerate(macro_list.data):
+                                        if k % 16 == 0:
+                                            f.write("\n")
+                                        f.write(f"{num},")
+
+                                        # `num`: range check
+                                        if macro_darr_type == "uint8_t":
+                                            if not 0 <= num < 256:
+                                                raise ValueError(
+                                                    f"Invalid {num=} for uint8_t"
+                                                )
+                                        elif macro_darr_type == "int8_t":
+                                            if not -128 <= num < 128:
+                                                raise ValueError(
+                                                    f"Invalid {num=} for int8_t, perhaps fixed ARP in macro?"
+                                                )
+                                        elif macro_darr_type == "int16_t":
+                                            if not -32768 <= num < 32768:
+                                                raise ValueError(
+                                                    f"Invalid {num=} for int16_t"
+                                                )
+                                        elif macro_darr_type == "bool":
+                                            if not 0 <= num < 2:
+                                                raise ValueError(
+                                                    f"Invalid {num=} for bool"
+                                                )
+                                        else:
+                                            assert False, f"Invalid {macro_darr_type=}"
+
+                                    f.write("\n" + "};" + "\n")
+                                    total_used_bytes += (
+                                        len(macro_list.data) * macro_darr_type_size
+                                    )
+
+                                    # write macro
+                                    f.write(
+                                        f"static const fb_inst_macro {c_var_name}_inst{inst_idx:02X}_macro{m_idx} = {{"
+                                        + "\n"
+                                    )
+                                    f.write(
+                                        f".kind=FB_MACRO_KIND_{str(macro.kind)}," + "\n"
+                                    )
+                                    f.write(f".mode={macro.mode}," + "\n")
+                                    f.write(f".length={len(macro_list.data)}," + "\n")
+                                    f.write(
+                                        f".loop_pos={macro_list.loop_pos if macro_list.loop_pos != -1 else 0xFF},"
+                                        + "\n"
+                                    )
+                                    f.write(
+                                        f".release_pos={macro_list.release_pos if macro_list.release_pos != -1 else 0xFF},"
+                                        + "\n"
+                                    )
+                                    f.write(f".delay={macro.delay}," + "\n")
+                                    f.write(f".speed={macro.speed}," + "\n")
+                                    f.write(
+                                        f".data={c_var_name}_inst{inst_idx:02X}_macro{m_idx}_data,"
+                                        + "\n"
+                                    )
+                                    f.write("};" + "\n")
+                                    total_used_bytes += 16
+
+                                # write macro array
+                                f.write(
+                                    f"static const fb_inst_macro {c_var_name}_inst{inst_idx:02X}_macros[] = {{"
+                                )
+                                for m_idx in range(macros_count):
+                                    if m_idx % 4 == 0:
+                                        f.write("\n")
+                                    f.write(
+                                        f"{c_var_name}_inst{inst_idx:02X}_macro{m_idx},"
+                                    )
+                                f.write("\n" + "};" + "\n")
+                                # macros should be moved to array, so no need to increase `total_used_bytes` here
+
+                            # TODO: Feature - wave synth
+                            # elif type(feature) == InsFeatureWaveSynth:
+                            #     assert not has_wave_synth
+                            #     has_wave_synth = True
+                            #     pass
+
+                            # TODO: Feature - sample
+                            # elif type(feature) == InsFeatureAmiga:
+                            #     assert not has_sample
+                            #     has_sample = True
+                            #     pass
+
+                            else:
+                                logging.warning(
+                                    f'"{os.path.basename(self.module.file_name)}": ignored instrument 0x{inst_idx:02X}\'s {feature=}'
+                                )
+
+                    # write single `fb_instrument`
+                    if macros_count == None:
+                        macros_count = 0
+                    f.write(
+                        f"static const fb_instrument {c_var_name}_inst{inst_idx:02X} = {{"
+                        + "\n"
+                    )
+                    f.write(f".kind=FB_INST_KIND_{inst_kind}," + "\n")
+                    f.write(f".macros_count={macros_count}," + "\n")
+                    f.write(
+                        ".gb="
+                        + (
+                            "NULL"
+                            if not has_gb
+                            else f"&{c_var_name}_inst{inst_idx:02X}_gb"
+                        )
+                        + ",\n"
+                    )
+                    f.write(
+                        ".macros="
+                        + (
+                            "NULL"
+                            if macros_count <= 0
+                            else f"{c_var_name}_inst{inst_idx:02X}_macros"
+                        )
+                        + ",\n"
+                    )
+                    f.write(
+                        ".wave_synth="
+                        + (
+                            "NULL"
+                            if not has_wave_synth
+                            else f"&{c_var_name}_inst{inst_idx:02X}_wave_synth"
+                        )
+                        + ",\n"
+                    )
+                    f.write(
+                        ".sample="
+                        + (
+                            "NULL"
+                            if not has_sample
+                            else f"&{c_var_name}_inst{inst_idx:02X}_sample"
+                        )
+                        + ",\n"
+                    )
+                    f.write("};" + "\n")
+                    total_used_bytes += 24
+
+                # write instruments array
+                f.write(f"static const fb_instrument {c_var_name}_instruments[] = {{")
+                for inst_idx in range(len(self.module.instruments)):
+                    if inst_idx % 4 == 0:
+                        f.write("\n")
+                    f.write(f"{c_var_name}_inst{inst_idx:02X},")
+                f.write("\n" + "};" + "\n")
+                # instruments should be moved to array, so no need to increase `total_used_bytes` here
 
                 # invert wavetable
-                is_gba = gb_chip.flags["chipType"] == 3 if "chipType" in gb_chip.flags else False
-                raw_invert = gb_chip.flags["invertWave"] if "invertWave" in gb_chip.flags else True
+                gb_chip: ChipInfo = list(
+                    filter(lambda ci: ci.type == ChipType.GB, self.module.chips.list)
+                )[0]
+
+                is_gba = (
+                    gb_chip.flags["chipType"] == 3
+                    if "chipType" in gb_chip.flags
+                    else False
+                )
+                raw_invert = (
+                    gb_chip.flags["invertWave"]
+                    if "invertWave" in gb_chip.flags
+                    else True
+                )
                 real_invert: bool = not (is_gba ^ raw_invert)
 
                 def inv(val: int) -> int:
@@ -58,6 +414,9 @@ class FurballModule:
 
                 # wavetables
                 wavetable_dimensions: List[Tuple[int, int]] = []
+
+                if len(self.module.wavetables) > TooManyWavetablesError.MAX_WAVETABLES:
+                    raise TooManyWavetablesError(self.module.wavetables)
 
                 for w_idx, wavetable in enumerate(self.module.wavetables):
                     f.write(f"static const uint32_t {c_var_name}_wt{w_idx}_data[] = {{")
@@ -76,10 +435,16 @@ class FurballModule:
                             f.write(f"\n")
                         # 4 byte little endian
                         data = wavetable.data
-                        val  = (inv(data[8*i + 0]) <<  4) | (inv(data[8*i + 1]) <<  0)
-                        val |= (inv(data[8*i + 2]) << 12) | (inv(data[8*i + 3]) <<  8)
-                        val |= (inv(data[8*i + 4]) << 20) | (inv(data[8*i + 5]) << 16)
-                        val |= (inv(data[8*i + 6]) << 28) | (inv(data[8*i + 7]) << 24)
+                        val = (inv(data[8 * i + 0]) << 4) | (inv(data[8 * i + 1]) << 0)
+                        val |= (inv(data[8 * i + 2]) << 12) | (
+                            inv(data[8 * i + 3]) << 8
+                        )
+                        val |= (inv(data[8 * i + 4]) << 20) | (
+                            inv(data[8 * i + 5]) << 16
+                        )
+                        val |= (inv(data[8 * i + 6]) << 28) | (
+                            inv(data[8 * i + 7]) << 24
+                        )
                         f.write(f"0x{val:08x},")
                         total_used_bytes += 4
 
@@ -87,9 +452,15 @@ class FurballModule:
 
                 # wavetables ptr array
                 if not self.module.wavetables:
-                    f.write(f"static const fb_wavetable *const {c_var_name}_wavetables = NULL;" + "\n")
+                    f.write(
+                        f"static const fb_wavetable *const {c_var_name}_wavetables = NULL;"
+                        + "\n"
+                    )
                 else:
-                    f.write(f"static const fb_wavetable {c_var_name}_wavetables[] = {{" + "\n")
+                    f.write(
+                        f"static const fb_wavetable {c_var_name}_wavetables[] = {{"
+                        + "\n"
+                    )
                     for w_idx in range(len(self.module.wavetables)):
                         f.write(f"{{.width={wavetable_dimensions[w_idx][0]}, ")
                         f.write(f".height={wavetable_dimensions[w_idx][1]}, ")
@@ -106,28 +477,42 @@ class FurballModule:
                     max_effects: int = 0
 
                     def empty(self) -> bool:
-                        return not self.vol and not self.note and not self.inst and not self.max_effects
+                        return (
+                            not self.vol
+                            and not self.note
+                            and not self.inst
+                            and not self.max_effects
+                        )
 
                 for channel in range(self.module.get_num_channels()):
                     # pattern data
-                    for pattern in filter(lambda pt: pt.channel == channel and pt.subsong == 0, self.module.patterns):
+                    for pattern in filter(
+                        lambda pt: pt.channel == channel and pt.subsong == 0,
+                        self.module.patterns,
+                    ):
                         # flags first
                         flags = PatternFlags()
 
                         for row in pattern.data:
-                            flags.vol |= (row.volume != 0xFFFF)
-                            flags.note |= (row.note != Note.__)
-                            flags.inst |= (row.instrument != 0xFFFF)
-                            effects_count = sum(1 for _ in filter(lambda fx: fx[0] != 0xFFFF,
-                            row.effects))
+                            flags.vol |= row.volume != 0xFFFF
+                            flags.note |= row.note != Note.__
+                            flags.inst |= row.instrument != 0xFFFF
+                            effects_count = sum(
+                                1
+                                for _ in filter(lambda fx: fx[0] != 0xFFFF, row.effects)
+                            )
                             if effects_count > flags.max_effects:
                                 flags.max_effects = effects_count
 
                         if flags.empty():
-                            f.write(f"static const uint8_t *const {c_var_name}_ch{channel+1}_pt{pattern.index}_data = NULL;" + "\n")
+                            f.write(
+                                f"static const uint8_t *const {c_var_name}_ch{channel+1}_pt{pattern.index:02X}_data = NULL;"
+                                + "\n"
+                            )
                         else:
                             f.write(
-                                f"_Alignas(2) static const uint8_t {c_var_name}_ch{channel+1}_pt{pattern.index}_data[] = {{" + "\n"
+                                f"_Alignas(2) static const uint8_t {c_var_name}_ch{channel+1}_pt{pattern.index:02X}_data[] = {{"
+                                + "\n"
                             )
 
                             for row_idx, row in enumerate(pattern.data):
@@ -141,33 +526,53 @@ class FurballModule:
                                     ba += struct.pack("<B", note_octave)
                                 if flags.inst:
                                     # inst `0xFF`: empty instrument
-                                    ba += struct.pack("<B", 0xFF if row.instrument == 0xFFFF else row.instrument)
+                                    ba += struct.pack(
+                                        "<B",
+                                        0xFF
+                                        if row.instrument == 0xFFFF
+                                        else row.instrument,
+                                    )
                                 if flags.max_effects > 0:
                                     fx_idx = -1
-                                    for fx_idx, fx in enumerate(filter(lambda fx: fx[0] != 0xFFFF, row.effects)):
+                                    for fx_idx, fx in enumerate(
+                                        filter(lambda fx: fx[0] != 0xFFFF, row.effects)
+                                    ):
                                         assert fx_idx < flags.max_effects
-                                        ba += struct.pack("<B", fx[0]) # effect
-                                        ba += struct.pack("<B", 0x00 if fx[1] == 0xFFFF else fx[1]) # value
+                                        ba += struct.pack("<B", fx[0])  # effect
+                                        ba += struct.pack(
+                                            "<B", 0x00 if fx[1] == 0xFFFF else fx[1]
+                                        )  # value
                                     empty_fx_cnt = flags.max_effects - (fx_idx + 1)
                                     # fx `0xAAAA`: empty effect
                                     ba += b"\xAA\xAA" * empty_fx_cnt
 
-                                assert len(ba) == (2 * flags.vol + flags.note + flags.inst + 2 * flags.max_effects)
+                                assert len(ba) == (
+                                    2 * flags.vol
+                                    + flags.note
+                                    + flags.inst
+                                    + 2 * flags.max_effects
+                                )
 
                                 for b in ba:
-                                    f.write(f"0x{b:02x},")
+                                    f.write(f"0x{b:02X},")
                                 if len(ba) > 0:
                                     f.write("\n")
                                 total_used_bytes += len(ba)
 
                             f.write("};" + "\n")
 
-                        f.write(f"static const fb_pattern {c_var_name}_ch{channel+1}_pt{pattern.index} = {{" + "\n")
+                        f.write(
+                            f"static const fb_pattern {c_var_name}_ch{channel+1}_pt{pattern.index:02X} = {{"
+                            + "\n"
+                        )
                         f.write(f".has_volume={str(flags.vol).lower()}, ")
                         f.write(f".has_note={str(flags.note).lower()}, ")
                         f.write(f".has_instrument={str(flags.inst).lower()}," + "\n")
                         f.write(f".max_effects_count={flags.max_effects}, ")
-                        f.write(f".data={c_var_name}_ch{channel+1}_pt{pattern.index}_data," + "\n")
+                        f.write(
+                            f".data={c_var_name}_ch{channel+1}_pt{pattern.index:02X}_data,"
+                            + "\n"
+                        )
                         f.write("};" + "\n")
                         total_used_bytes += 8
 
@@ -180,7 +585,7 @@ class FurballModule:
                     for i, num in enumerate(order):
                         if i % 4 == 0:
                             f.write("\n")
-                        f.write(f"&{c_var_name}_ch{channel+1}_pt{num},")
+                        f.write(f"&{c_var_name}_ch{channel+1}_pt{num:02X},")
                         total_used_bytes += 4
 
                     f.write("\n" + "};" + "\n")
@@ -189,57 +594,35 @@ class FurballModule:
                 f.write("\n\n")
                 f.write("// ======== result ========" + "\n")
                 f.write(f"const fb_music {c_var_name} = {{" + "\n")
+                f.write(f".instruments_count={len(self.module.instruments)}," + "\n")
                 f.write(f".wavetables_count={len(self.module.wavetables)}," + "\n")
+                f.write(f".instruments={c_var_name}_instruments," + "\n")
                 f.write(f".wavetables={c_var_name}_wavetables," + "\n")
-                f.write(f".order_length={len(self.module.subsongs[0].order[0])}," + "\n")
-                f.write(f".pattern_length={self.module.subsongs[0].pattern_length}," + "\n")
+                f.write(
+                    f".order_length={len(self.module.subsongs[0].order[0])}," + "\n"
+                )
+                f.write(
+                    f".pattern_length={self.module.subsongs[0].pattern_length}," + "\n"
+                )
                 for dmg_ch in range(4):
-                    f.write(f".ch{dmg_ch+1}_order={c_var_name}_ch{dmg_ch+1}_ord," + "\n")
+                    f.write(
+                        f".ch{dmg_ch+1}_order={c_var_name}_ch{dmg_ch+1}_ord," + "\n"
+                    )
                 f.write("};" + "\n")
-                total_used_bytes += 28
+                total_used_bytes += 32
 
-            print(f'"{output_file_basename}" ({total_used_bytes} bytes in ROM)')
+            logging.info(
+                f'"{output_file_basename}" written ({total_used_bytes} bytes in ROM)'
+            )
 
         except (OSError, IOError) as e:
-            print(f'"{output_file_basename}" convert FAILED!')
+            logging.error(f'"{output_file_basename}" convert FAILED!')
             raise
         except Exception as e:
-            print(f'"{output_file_basename}" convert FAILED!')
+            logging.error(f'"{output_file_basename}" convert FAILED!')
             if os.path.exists(output_file_path) and os.path.isfile(output_file_path):
                 os.remove(output_file_path)
             raise
-
-
-    def __write_fb_music_structs(self, f: TextIO):
-        f.write("#include <stdbool.h>" + "\n")
-        f.write("#include <stddef.h>" + "\n")
-        f.write("#include <stdint.h>" + "\n\n")
-
-        f.write("typedef struct {" + "\n")
-        f.write("  const uint16_t width;" + "\n")
-        f.write("  const uint16_t height;" + "\n")
-        f.write("  const uint32_t *const data;" + "\n")
-        f.write("} fb_wavetable;" + "\n\n")
-
-        f.write("typedef struct {" + "\n")
-        f.write("  const bool has_volume;" + "\n")
-        f.write("  const bool has_note;" + "\n")
-        f.write("  const bool has_instrument;" + "\n")
-        f.write("  const uint8_t max_effects_count;" + "\n")
-        f.write("  const uint8_t *const data;" + "\n")
-        f.write("} fb_pattern;" + "\n\n")
-
-        f.write("typedef struct {" + "\n")
-        f.write("  const uint16_t wavetables_count;" + "\n")
-        f.write("  const fb_wavetable *const wavetables;" + "\n")
-        f.write("  const uint16_t order_length;" + "\n")
-        f.write("  const uint16_t pattern_length;" + "\n")
-        f.write("  const fb_pattern *const *const ch1_order;" + "\n")
-        f.write("  const fb_pattern *const *const ch2_order;" + "\n")
-        f.write("  const fb_pattern *const *const ch3_order;" + "\n")
-        f.write("  const fb_pattern *const *const ch4_order;" + "\n")
-        f.write("} fb_music;" + "\n\n")
-
 
     def __get_note_octave(self, row: FurnaceRow) -> int:
         """
@@ -257,10 +640,39 @@ class FurballModule:
 
         return 12 * (5 + row.octave) + row.note.value % 12
 
+    @dataclass
+    class MacroData:
+        loop_pos: int = -1
+        release_pos: int = -1
+        data: List[int] = field(default_factory=list)
+
+    def __convert_macro_data(self, data: List[Union[int, MacroItem]]) -> MacroData:
+        result = self.MacroData()
+        try:
+            result.loop_pos = data.index(MacroItem.LOOP)
+        except ValueError:
+            pass
+
+        try:
+            result.release_pos = data.index(MacroItem.RELEASE)
+        except ValueError:
+            pass
+
+        if result.loop_pos != -1 and result.release_pos != -1:
+            if result.loop_pos > result.release_pos:
+                result.loop_pos -= 1
+            else:
+                result.release_pos -= 1
+
+        result.data = [x for x in data if type(x) == int]
+        return result
+
 
 if __name__ == "__main__":
     import argparse
     import sys
+
+    logging.basicConfig(format="[%(levelname)s] %(message)s", level=logging.INFO)
 
     parser = argparse.ArgumentParser(
         description="convert Furnace modules into Furball binary format."
@@ -283,6 +695,6 @@ if __name__ == "__main__":
     # Use `output_filename` as C variable name
     if not args.c_var_name:
         args.c_var_name = os.path.splitext(os.path.basename(args.output))[0]
-    
+
     fb_module = FurballModule(args.input)
     fb_module.write_file(args.output, args.c_var_name)

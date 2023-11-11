@@ -1,8 +1,7 @@
 #ifndef FB_MUSIC_H
 #define FB_MUSIC_H
 
-#include <stdbool.h>
-#include <stdint.h>
+#include "fb_instrument.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -36,8 +35,10 @@ typedef struct
 
 typedef struct
 {
-    const uint16_t wavetables_count; // [0..256]
+    const uint16_t instruments_count; // [0..254]
+    const uint16_t wavetables_count;  // [0..255]
 
+    const fb_instrument *const instruments; // shared across DMG & PCM
     const fb_wavetable *const wavetables; // only for ch3 (DMG WAV)
 
     const uint16_t order_length;   // [0..256]
