@@ -409,13 +409,21 @@ class FurballModule:
                     total_used_bytes += 24
 
                 # write instruments array
-                f.write(f"static const fb_instrument {c_var_name}_instruments[] = {{")
-                for inst_idx in range(len(self.module.instruments)):
-                    if inst_idx % 4 == 0:
-                        f.write("\n")
-                    f.write(f"{c_var_name}_inst{inst_idx:02X},")
-                f.write("\n" + "};" + "\n")
-                # instruments should be moved to array, so no need to increase `total_used_bytes` here
+                if self.module.instruments:
+                    f.write(
+                        f"static const fb_instrument {c_var_name}_instruments[] = {{"
+                    )
+                    for inst_idx in range(len(self.module.instruments)):
+                        if inst_idx % 4 == 0:
+                            f.write("\n")
+                        f.write(f"{c_var_name}_inst{inst_idx:02X},")
+                    f.write("\n" + "};" + "\n")
+                    # instruments should be moved to array, so no need to increase `total_used_bytes` here
+                else:
+                    f.write(
+                        f"static const fb_instrument *const {c_var_name}_instruments = NULL;"
+                        + "\n"
+                    )
 
                 # invert wavetable
                 gb_chip: ChipInfo = list(
