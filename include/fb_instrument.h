@@ -4,12 +4,14 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define FB_GB_SOUND_LENGTH_INFINITY 64
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-typedef enum
+typedef enum fb_gb_hw_cmd_kind_
 {
     FB_GB_HW_CMD_KIND_ENVELOP,
     FB_GB_HW_CMD_KIND_SWEEP,
@@ -19,37 +21,37 @@ typedef enum
     FB_GB_HW_CMD_KIND_LOOP_UNTIL_RELEASE,
 } fb_gb_hw_cmd_kind;
 
-typedef struct
+typedef struct fb_gb_hw_cmd_envelop_
 {
     const uint8_t volume;         // [0..15]
     const uint8_t envelop_length; // [0..7]
-    const uint8_t sound_length;   // [0..64], infinity=64
+    const uint8_t sound_length;   // [0..63], infinity=64 (FB_GB_SOUND_LENGTH_INFINITY)
     const bool direction_up;
 } fb_gb_hw_cmd_envelop;
 
-typedef struct
+typedef struct fb_gb_hw_cmd_sweep_
 {
     const uint8_t shift; // [0..7]
     const uint8_t speed; // [0..7]
     const bool direction_down;
 } fb_gb_hw_cmd_sweep;
 
-typedef struct
+typedef struct fb_gb_hw_cmd_wait_
 {
     const uint16_t length; // [1..256]
 } fb_gb_hw_cmd_wait;
 
-typedef struct
+typedef struct fb_gb_hw_cmd_loop_
 {
     const uint16_t position;
 } fb_gb_hw_cmd_loop;
 
-typedef struct
+typedef struct fb_gb_hw_cmd_loop_until_release_
 {
     const uint16_t position;
 } fb_gb_hw_cmd_loop_until_release;
 
-typedef struct
+typedef struct fb_gb_hw_cmd_
 {
     const fb_gb_hw_cmd_kind kind;
 
@@ -62,11 +64,11 @@ typedef struct
     };
 } fb_gb_hw_cmd;
 
-typedef struct
+typedef struct fb_inst_gb_
 {
     const uint8_t initial_volume; // [0..15]
     const uint8_t envelop_length; // [0..7]
-    const uint8_t sound_length;   // [0..64], infinity=64
+    const uint8_t sound_length;   // [0..63], infinity=64 (FB_GB_SOUND_LENGTH_INFINITY)
     const bool envelop_direction_up;
     const bool always_init_envelop;
     const bool software_envelop;
@@ -75,7 +77,7 @@ typedef struct
     const fb_gb_hw_cmd *const hardware_sequence;
 } fb_inst_gb;
 
-typedef enum
+typedef enum fb_macro_kind_
 {
     FB_MACRO_KIND_VOL,
     FB_MACRO_KIND_ARP,
@@ -90,7 +92,7 @@ typedef enum
     FB_MACRO_KIND_PHASE_RESET,
 } fb_macro_kind;
 
-typedef struct
+typedef struct fb_inst_macro_
 {
     const fb_macro_kind kind;
     // checkbox
@@ -117,7 +119,7 @@ typedef struct
     const void *const data;
 } fb_inst_macro;
 
-typedef enum
+typedef enum fb_wave_synth_kind_
 {
     // Single-waveform
     FB_WAVE_SYNTH_KIND_NONE = 0,
@@ -140,7 +142,7 @@ typedef enum
     FB_WAVE_SYNTH_KIND_PHASE_MOD,
 } fb_wave_synth_kind;
 
-typedef struct
+typedef struct fb_inst_wave_synth_
 {
     const fb_wave_synth_kind kind;
     const bool global;
@@ -155,18 +157,18 @@ typedef struct
     const uint8_t power; // only used for Phase Modulation
 } fb_inst_wave_synth;
 
-typedef struct
+typedef struct fb_inst_sample_
 {
     const char todo; // TODO
 } fb_inst_sample;
 
-typedef enum
+typedef enum fb_inst_kind_
 {
     FB_INST_KIND_GB,
     FB_INST_KIND_SAMPLE,
 } fb_inst_kind;
 
-typedef struct
+typedef struct fb_instrument_
 {
     const fb_inst_kind kind;
     const uint8_t macros_count;

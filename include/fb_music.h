@@ -8,21 +8,21 @@ extern "C"
 {
 #endif
 
-typedef struct
+typedef struct fb_groove_
 {
     const uint8_t length; // [1..16]
     const uint8_t *const data;
 } fb_groove;
 
-typedef struct
+typedef struct fb_wavetable_
 {
-    const uint16_t width;  // 32 or 64
+    const uint16_t width;  // 32 (always)
     const uint16_t height; // 16 (always)
 
     const uint32_t *const data; // len = width / 8
 } fb_wavetable;
 
-typedef struct
+typedef struct fb_pattern_
 {
     // if `has_*` is false, it's not in `data`.
     const bool has_volume;
@@ -39,7 +39,7 @@ typedef struct
     const uint8_t *const data;
 } fb_pattern;
 
-typedef struct
+typedef struct fb_music_
 {
     const uint8_t *const speeds; // [1..255] each
     const uint8_t speeds_length; // [1..16]

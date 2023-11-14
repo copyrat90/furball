@@ -60,6 +60,14 @@ void fb_mgba_printf(fb_mgba_log_level, const char *str, ...);
 #define FB_LOG_MAY_FATAL(...) FB_LOG_ERROR(__VA_ARGS__)
 #endif // FB_MGBA_LOG_MAY_FATAL_CRASH
 
+#ifdef FB_MGBA_LOG_ENABLED
+#define FB_ASSERT(condition, ...) \
+    if (!(condition)) \
+    FB_LOG_FATAL(__VA_ARGS__)
+#else
+#define FB_ASSERT(condition, ...) ((void)0)
+#endif
+
 #ifdef __cplusplus
 }
 #endif

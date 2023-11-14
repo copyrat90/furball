@@ -35,7 +35,7 @@ GRAPHICS	:=
 SOURCES		:= src/*.c
 
 # Include directories
-INCLUDES	:= include pvt/include
+INCLUDES	:= include include_private
 
 #
 # Dependencies

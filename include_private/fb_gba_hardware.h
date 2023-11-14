@@ -32,14 +32,14 @@
 #define FB_REG_SND1SWEEP   *((volatile uint16_t *)(FB_MEM_IO + 0x60)) // Sound 1 Sweep control
 #define FB_REG_SND1CNT     *((volatile uint16_t *)(FB_MEM_IO + 0x62)) // Sound 1 Length, wave duty and envelope control
 #define FB_REG_SND1FREQ    *((volatile uint16_t *)(FB_MEM_IO + 0x64)) // Sound 1 Frequency, reset and loop control
-#define FB_REG_SND2CNT     *((volatile uint16_t *)(FB_MEM_IO + 0x68)) // Sound 2 Lenght, wave duty and envelope control
+#define FB_REG_SND2CNT     *((volatile uint16_t *)(FB_MEM_IO + 0x68)) // Sound 2 Length, wave duty and envelope control
 #define FB_REG_SND2FREQ    *((volatile uint16_t *)(FB_MEM_IO + 0x6C)) // Sound 2 Frequency, reset and loop control
 #define FB_REG_SND3SEL     *((volatile uint16_t *)(FB_MEM_IO + 0x70)) // Sound 3 Enable and wave ram bank control
-#define FB_REG_SND3CNT     *((volatile uint16_t *)(FB_MEM_IO + 0x72)) // Sound 3 Sound lenght and output level control
+#define FB_REG_SND3CNT     *((volatile uint16_t *)(FB_MEM_IO + 0x72)) // Sound 3 Sound length and output level control
 #define FB_REG_SND3FREQ    *((volatile uint16_t *)(FB_MEM_IO + 0x74)) // Sound 3 Frequency, reset and loop control
 #define FB_REG_SND4CNT     *((volatile uint16_t *)(FB_MEM_IO + 0x78)) // Sound 4 Length, output level and envelope control
 #define FB_REG_SND4FREQ    *((volatile uint16_t *)(FB_MEM_IO + 0x7C)) // Sound 4 Noise parameters, reset and loop control
-#define FB_REG_SNDDMGCNT    *((volatile uint16_t *)(FB_MEM_IO + 0x80)) // Sound 1-4 Output level and Stereo control
+#define FB_REG_SNDDMGCNT   *((volatile uint16_t *)(FB_MEM_IO + 0x80)) // Sound 1-4 Output level and Stereo control
 #define FB_REG_SNDDSCNT    *((volatile uint16_t *)(FB_MEM_IO + 0x82)) // Direct Sound control and Sound 1-4 output ratio
 #define FB_REG_SNDSTAT     *((volatile uint16_t *)(FB_MEM_IO + 0x84)) // Master sound enable and Sound 1-4 play status
 #define FB_REG_SNDBIAS     *((volatile uint16_t *)(FB_MEM_IO + 0x88)) // Sound bias and Amplitude resolution control
