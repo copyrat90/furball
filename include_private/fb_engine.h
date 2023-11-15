@@ -28,7 +28,10 @@ typedef struct fb_engine_
 typedef struct fb_dmg_channel_
 {
     const fb_instrument *inst;
+    bool note_on;
     bool retrigger;
+    bool envelop_initialized;
+    bool snd_len_enabled;
 
     // store current indexes of `inst->macros`
     struct

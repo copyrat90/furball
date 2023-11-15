@@ -26,6 +26,8 @@ from chipchune.furnace.data_types import (
     SingleMacro,
 )
 
+from chipchune.furnace.wavetable import FurnaceWavetable
+
 from fb_exceptions import *
 
 
@@ -449,6 +451,47 @@ class FurballModule:
                 # wavetables
                 wavetable_dimensions: List[Tuple[int, int]] = []
 
+                # insert default wavetable when no wavetable presents
+                if not self.module.wavetables:
+                    default_wave = FurnaceWavetable()
+                    default_wave.meta.width = 32
+                    default_wave.meta.height = 16
+                    default_wave.data = [
+                        0,
+                        0,
+                        0,
+                        1,
+                        1,
+                        2,
+                        2,
+                        3,
+                        3,
+                        4,
+                        4,
+                        5,
+                        5,
+                        6,
+                        6,
+                        7,
+                        7,
+                        8,
+                        8,
+                        9,
+                        9,
+                        10,
+                        10,
+                        11,
+                        11,
+                        12,
+                        12,
+                        13,
+                        13,
+                        14,
+                        14,
+                        15,
+                    ]
+                    self.module.wavetables.append(default_wave)
+
                 if len(self.module.wavetables) > TooManyWavetablesError.MAX_WAVETABLES:
                     raise TooManyWavetablesError(self.module.wavetables)
 
@@ -485,22 +528,19 @@ class FurballModule:
                     f.write("\n" + "};" + "\n")
 
                 # wavetables ptr array
-                if not self.module.wavetables:
-                    f.write(
-                        f"static const fb_wavetable *const {c_var_name}_wavetables = NULL;"
-                        + "\n"
-                    )
-                else:
-                    f.write(
-                        f"static const fb_wavetable {c_var_name}_wavetables[] = {{"
-                        + "\n"
-                    )
-                    for w_idx in range(len(self.module.wavetables)):
-                        f.write(f"{{.width={wavetable_dimensions[w_idx][0]}, ")
-                        f.write(f".height={wavetable_dimensions[w_idx][1]}, ")
-                        f.write(f".data={c_var_name}_wt{w_idx}_data}}," + "\n")
-                        total_used_bytes += 8
-                    f.write("};" + "\n")
+                assert (
+                    self.module.wavetables
+                ), "Wavetables shouldn't be empty (default wavetable should be inserted)"
+
+                f.write(
+                    f"static const fb_wavetable {c_var_name}_wavetables[] = {{" + "\n"
+                )
+                for w_idx in range(len(self.module.wavetables)):
+                    f.write(f"{{.width={wavetable_dimensions[w_idx][0]}, ")
+                    f.write(f".height={wavetable_dimensions[w_idx][1]}, ")
+                    f.write(f".data={c_var_name}_wt{w_idx}_data}}," + "\n")
+                    total_used_bytes += 8
+                f.write("};" + "\n")
 
                 # patterns
                 @dataclass

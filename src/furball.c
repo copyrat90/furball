@@ -9,10 +9,9 @@
 #include "fb_music.h"
 #include "fb_note.h"
 
-#include "fb_mgba_log.h"
-
 #define FB_JUMP_POS_STOP_SONG 0x7FF0
 #define FB_JUMP_POS_EMPTY 0x7FFF
+#define FB_CH3_SND_LEN 0xFE // Furnace limitation, `snd_len` of Ch3 is fixed
 
 static void fb_process_row(void);
 
@@ -47,7 +46,10 @@ static const fb_instrument default_gb_instrument = {
 
 static const fb_dmg_channel init_dmg_channel = {
     .inst = &default_gb_instrument,
+    .note_on = false,
     .retrigger = false,
+    .envelop_initialized = false,
+    .snd_len_enabled = false,
     .macro_idxes = {0},
     .freq_base = 1,
     .freq_diff = 0,
@@ -169,9 +171,22 @@ void fb_play(const fb_music *const music, const fb_loop_setting loop_setting)
     if (music == NULL)
         return;
 
-    // Reset DMG pannings
     if (engine.settings.channels & FB_INIT_CHANNELS_DMG)
     {
+        // Set default Ch3 waveform
+        if (engine.settings.channels & FB_INIT_CHANNELS_DMG_CH3)
+        {
+            // avoid loud spike in Ch3 DAC
+            // https://gbdev.io/pandocs/Audio_details.html#game-boy-advance-audio
+            FB_REG_SNDDMGCNT &= ~(FB_SNDDMGCNT_PSG_3_ENABLE_LEFT | FB_SNDDMGCNT_PSG_3_ENABLE_RIGHT);
+
+            FB_REG_SND3SEL = FB_SND3SEL_BANK_SET(1) | FB_SND3SEL_SIZE_32 | FB_SND3SEL_ENABLE;
+            for (int i = 0; i < 4; ++i)
+                FB_REG_WAVE_RAM[i] = music->wavetables[0].data[i];
+            FB_REG_SND3SEL ^= FB_SND3SEL_BANK_SET(1);
+        }
+
+        // Reset DMG pannings
         const uint16_t mask = (engine.settings.channels & FB_INIT_CHANNELS_DMG);
         FB_REG_SNDDMGCNT |=
             ((mask << 12) | (mask << 8) | FB_SNDDMGCNT_PSG_VOL_LEFT_SET(7) | FB_SNDDMGCNT_PSG_VOL_RIGHT_SET(7));
@@ -210,24 +225,24 @@ static void silence_channels(const fb_init_channels channels)
     {
         FB_REG_SND1CNT = (FB_REG_SND1CNT & 0x00FF) |
                          (FB_SND1CNT_ENV_VOLUME_SET(0) | FB_SND1CNT_ENV_DIR_INC | FB_SND1CNT_ENV_STEP_TIME_SET(0));
-        FB_REG_SND1FREQ = FB_SND1FREQ_RESTART;
+        FB_REG_SND1FREQ = FB_SND1FREQ_RETRIG;
     }
     if ((channels & FB_INIT_CHANNELS_DMG_CH2) && (engine.settings.channels & FB_INIT_CHANNELS_DMG_CH2))
     {
         FB_REG_SND2CNT = (FB_REG_SND2CNT & 0x00FF) |
                          (FB_SND2CNT_ENV_VOLUME_SET(0) | FB_SND2CNT_ENV_DIR_INC | FB_SND2CNT_ENV_STEP_TIME_SET(0));
-        FB_REG_SND2FREQ = FB_SND2FREQ_RESTART;
+        FB_REG_SND2FREQ = FB_SND2FREQ_RETRIG;
     }
     if ((channels & FB_INIT_CHANNELS_DMG_CH3) && (engine.settings.channels & FB_INIT_CHANNELS_DMG_CH3))
     {
         FB_REG_SND3CNT = (FB_REG_SND3CNT & 0x00FF) | (FB_SND3CNT_VOLUME_0);
-        FB_REG_SND3FREQ = FB_SND3FREQ_RESTART;
+        FB_REG_SND3FREQ = FB_SND3FREQ_RETRIG;
     }
     if ((channels & FB_INIT_CHANNELS_DMG_CH4) && (engine.settings.channels & FB_INIT_CHANNELS_DMG_CH4))
     {
         FB_REG_SND4CNT = (FB_REG_SND4CNT & 0x00FF) |
                          (FB_SND4CNT_ENV_VOLUME_SET(0) | FB_SND4CNT_ENV_DIR_INC | FB_SND4CNT_ENV_STEP_TIME_SET(0));
-        FB_REG_SND4FREQ = FB_SND4FREQ_RESTART;
+        FB_REG_SND4FREQ = FB_SND4FREQ_RETRIG;
     }
 
     // TODO: Silence Furball managed DirectSound channels
@@ -379,20 +394,34 @@ static void fb_process_dmg_row(const int ch, const fb_pattern *const pattern)
     // decode row
     if (inst != 0xFF)
     {
+        const fb_instrument *prev_inst = channel->inst;
+
         channel->inst = &player.music->instruments[inst];
         const fb_inst_gb *const gb = ((channel->inst->gb != NULL) ? channel->inst->gb : &default_inst_gb);
 
-        channel->vol = gb->initial_volume;
-        channel->env_len = gb->envelop_length;
-        channel->snd_len = gb->sound_length;
-        channel->dir_up = gb->envelop_direction_up;
+        if (prev_inst != channel->inst)
+        {
+            if (ch != 3)
+                channel->vol = gb->initial_volume;
+            channel->env_len = gb->envelop_length;
+            channel->snd_len = gb->sound_length;
+            channel->dir_up = gb->envelop_direction_up;
+
+            channel->envelop_initialized = true;
+        }
     }
+
+    if (vol != 0xFFFF)
+    {
+        channel->vol = vol;
+        channel->envelop_initialized = true;
+    }
+
     if (note != FB_NOTE_EMPTY)
     {
         if (note == FB_NOTE_OFF)
         {
-            channel->vol = 0;
-            channel->env_len = 0;
+            channel->note_on = false;
             channel->retrigger = true;
         }
         else if (note == FB_NOTE_NOTE_REL)
@@ -410,13 +439,11 @@ static void fb_process_dmg_row(const int ch, const fb_pattern *const pattern)
             else
                 channel->freq_base = dmg_period_table[fb_clamp_s32(note, FB_NOTE_B_1, FB_NOTE_B_9) - FB_NOTE_B_1];
 
+            channel->note_on = true;
             channel->retrigger = true;
         }
     }
-    if (vol != 0xFFFF)
-    {
-        channel->vol = vol;
-    }
+
     for (int i = 0; i < pattern->max_effects_count; ++i)
     {
         const uint8_t fx = effects[i].kind;
@@ -443,9 +470,24 @@ static void fb_process_dmg_row(const int ch, const fb_pattern *const pattern)
                 player.jump_pos.row = val;
             }
             break;
+        case FB_EFFECT_SET_WAVEFORM: {
+            const int wt_idx = (val < player.music->wavetables_count) ? val : 0;
+            for (int i = 0; i < 4; ++i)
+                FB_REG_WAVE_RAM[i] = player.music->wavetables[wt_idx].data[i];
+            FB_REG_SND3SEL ^= FB_SND3SEL_BANK_SET(1);
+            break;
+        }
+        case FB_EFFECT_SET_NOISE_LENGTH:
+            const bool short_noise = (val != 0);
+            FB_REG_SND4FREQ = (FB_REG_SND4FREQ & ~FB_SND4FREQ_WIDTH_7_BITS) |
+                              (short_noise ? FB_SND4FREQ_WIDTH_7_BITS : FB_SND4FREQ_WIDTH_15_BITS);
+            break;
         case FB_EFFECT_SET_DUTY_CYCLE:
-            if (val <= 3)
-                channel->duty = val;
+            if (ch == 1 || ch == 2)
+            {
+                channel->duty = val % 4;
+                channel->envelop_initialized = true;
+            }
             break;
         case FB_EFFECT_STOP_SONG:
             player.jump_pos.order = FB_JUMP_POS_STOP_SONG;
@@ -457,29 +499,58 @@ static void fb_process_dmg_row(const int ch, const fb_pattern *const pattern)
     }
 
     // execute row
+    const bool snd_len_enabled = (channel->snd_len != FB_GB_SOUND_LENGTH_INFINITY);
+
+    // avoid audio pop (keep DAC on)
+    const uint16_t sndcnt_env_dir =
+        ((channel->dir_up || channel->vol == 0) ? FB_SND1CNT_ENV_DIR_INC : FB_SND1CNT_ENV_DIR_DEC);
+
     if (ch == 1 || ch == 2)
     {
         volatile uint16_t *const reg_sndfreq = ((ch == 1) ? &FB_REG_SND1FREQ : &FB_REG_SND2FREQ);
         volatile uint16_t *const reg_sndcnt = ((ch == 1) ? &FB_REG_SND1CNT : &FB_REG_SND2CNT);
 
-        // avoid audio pop (keep DAC on)
-        const uint16_t sndcnt_env_dir =
-            ((channel->dir_up || channel->vol == 0) ? FB_SND1CNT_ENV_DIR_INC : FB_SND1CNT_ENV_DIR_DEC);
-
-        const bool snd_len_enabled = (channel->snd_len != FB_GB_SOUND_LENGTH_INFINITY);
-
-        if (channel->retrigger)
+        if (channel->envelop_initialized)
             *reg_sndcnt =
                 (snd_len_enabled ? FB_SND1CNT_LENGTH_SET(FB_GB_SOUND_LENGTH_INFINITY - 1 - channel->snd_len) : 0) |
                 ((channel->duty & 3) << 6) | FB_SND1CNT_ENV_STEP_TIME_SET(channel->env_len) | sndcnt_env_dir |
-                FB_SND1CNT_ENV_VOLUME_SET(channel->vol);
-        *reg_sndfreq =
-            (FB_SND1FREQ_PERIOD_SET(channel->freq_base + channel->freq_diff) |
-             ((snd_len_enabled) ? FB_SND1FREQ_LENGTH_ENABLE : 0) | ((channel->retrigger) ? FB_SND1FREQ_RESTART : 0));
+                FB_SND1CNT_ENV_VOLUME_SET((channel->note_on) ? channel->vol : 0);
+        if (channel->retrigger || channel->snd_len_enabled != snd_len_enabled)
+            *reg_sndfreq = ((channel->retrigger) ? FB_SND1FREQ_RETRIG : 0) |
+                           ((snd_len_enabled) ? FB_SND1FREQ_LENGTH_ENABLE : 0) |
+                           FB_SND1FREQ_PERIOD_SET(channel->freq_base + channel->freq_diff);
     }
-    // TODO: Execute row for Ch3 & Ch4
+    else if (ch == 3)
+    {
+        const int vol = ((!channel->note_on)    ? FB_SND3CNT_VOLUME_0
+                         : (channel->vol >= 12) ? FB_SND3CNT_VOLUME_100
+                         : (channel->vol >= 8)  ? FB_SND3CNT_VOLUME_50
+                         : (channel->vol >= 4)  ? FB_SND3CNT_VOLUME_25
+                                                : FB_SND3CNT_VOLUME_0);
 
+        if (channel->envelop_initialized)
+            FB_REG_SND3CNT = vol | ((snd_len_enabled) ? FB_SND3CNT_LENGTH_SET(FB_CH3_SND_LEN) : 0);
+        if (channel->retrigger || channel->snd_len_enabled != snd_len_enabled)
+            FB_REG_SND3FREQ = ((channel->retrigger) ? FB_SND3FREQ_RETRIG : 0) |
+                              ((snd_len_enabled) ? FB_SND3FREQ_LENGTH_ENABLE : 0) |
+                              FB_SND3FREQ_PERIOD_SET(channel->freq_base + channel->freq_diff);
+    }
+    else if (ch == 4)
+    {
+        if (channel->envelop_initialized)
+            FB_REG_SND4CNT =
+                (snd_len_enabled ? FB_SND4CNT_LENGTH_SET(FB_GB_SOUND_LENGTH_INFINITY - 1 - channel->snd_len) : 0) |
+                ((channel->duty & 3) << 6) | FB_SND4CNT_ENV_STEP_TIME_SET(channel->env_len) | sndcnt_env_dir |
+                FB_SND4CNT_ENV_VOLUME_SET((channel->note_on) ? channel->vol : 0);
+        if (channel->retrigger || channel->snd_len_enabled != snd_len_enabled)
+            FB_REG_SND4FREQ =
+                ((channel->retrigger) ? FB_SND4FREQ_RETRIG : 0) | ((snd_len_enabled) ? FB_SND4FREQ_LENGTH_ENABLE : 0) |
+                FB_SND4FREQ_PRE_STEP_RATIO_SET(channel->freq_base >> 4) | FB_SND4FREQ_DIV_RATIO_SET(channel->freq_base);
+    }
+
+    channel->snd_len_enabled = snd_len_enabled;
     channel->retrigger = false;
+    channel->envelop_initialized = false;
 }
 
 static void fb_process_row(void)

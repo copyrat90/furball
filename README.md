@@ -10,7 +10,7 @@ Well... not yet.
 
 In short: Heavily WIP, **expect breaking changes all the time.**
 
-* Only very basic DMG Ch1/2 playback for now.
+* Only very basic DMG playback for now.
     + No effects, macros... nothing.
 * No PCM support yet.
 

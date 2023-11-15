@@ -51,7 +51,7 @@ typedef struct fb_music_
     const fb_groove *const grooves; // [1..255] each
 
     const uint16_t instruments_count;       // [0..254]
-    const uint16_t wavetables_count;        // [0..255]
+    const uint16_t wavetables_count;        // [1..255] (at least 1 default one)
     const fb_instrument *const instruments; // shared across DMG & PCM
     const fb_wavetable *const wavetables;   // only for ch3 (DMG WAV)
 

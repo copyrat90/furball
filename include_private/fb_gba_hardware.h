@@ -135,7 +135,7 @@
 
 #define FB_SND1FREQ_LENGTH_ENABLE       (1 << 14) // R/W
 
-#define FB_SND1FREQ_RESTART             (1 << 15) // WO
+#define FB_SND1FREQ_RETRIG              (1 << 15) // WO
 
 // SND2CNT (NR21, NR22) (SOUND2CNT_L)
 
@@ -164,7 +164,7 @@
 
 #define FB_SND2FREQ_LENGTH_ENABLE       (1 << 14) // R/W
 
-#define FB_SND2FREQ_RESTART             (1 << 15) // WO
+#define FB_SND2FREQ_RETRIG              (1 << 15) // WO
 
 // SND3SEL (NR30) (SOUND3CNT_L)
 
@@ -196,7 +196,7 @@
 
 #define FB_SND3FREQ_LENGTH_ENABLE       (1 << 14) // R/W
 
-#define FB_SND3FREQ_RESTART             (1 << 15) // WO
+#define FB_SND3FREQ_RETRIG              (1 << 15) // WO
 
 // SND4CNT (NR41, NR42) (SOUND4CNT_L)
 
@@ -225,7 +225,7 @@
 
 #define FB_SND4FREQ_LENGTH_ENABLE       (1 << 14) // R/W
 
-#define FB_SND4FREQ_RESTART             (1 << 15) // WO
+#define FB_SND4FREQ_RETRIG              (1 << 15) // WO
 
 // SNDDMGCNT (SOUNDCNT_L)
 
