@@ -421,8 +421,12 @@ static void fb_process_dmg_row(const int ch, const fb_pattern *const pattern)
     {
         if (note == FB_NOTE_OFF)
         {
-            channel->note_on = false;
-            channel->retrigger = true;
+            if (channel->note_on)
+            {
+                channel->note_on = false;
+                channel->envelop_initialized = true;
+                channel->retrigger = true;
+            }
         }
         else if (note == FB_NOTE_NOTE_REL)
         {
@@ -439,7 +443,11 @@ static void fb_process_dmg_row(const int ch, const fb_pattern *const pattern)
             else
                 channel->freq_base = dmg_period_table[fb_clamp_s32(note, FB_NOTE_B_1, FB_NOTE_B_9) - FB_NOTE_B_1];
 
-            channel->note_on = true;
+            if (!channel->note_on)
+            {
+                channel->note_on = true;
+                channel->envelop_initialized = true;
+            }
             channel->retrigger = true;
         }
     }
